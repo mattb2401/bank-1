@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/ksred/bank/payments"
 	"os"
 )
 
@@ -27,8 +26,9 @@ func parseFlags() {
 		break
 	case "server":
 		// Run server for bank system
-		payments.CheckPayment()
-		os.Exit(0)
+		for {
+			runServer()
+		}
 		break
 	default:
 		fmt.Println("No valid option chosen")

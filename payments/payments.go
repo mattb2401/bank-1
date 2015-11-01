@@ -2,6 +2,7 @@ package payments
 
 import (
 	"fmt"
+	//"log"
 	"os"
 	"strconv"
 	"strings"
@@ -37,10 +38,12 @@ func ProcessPAIN(data []string) {
 	// Validate input
 	sender := parseAccountHolder(data[1])
 	receiver := parseAccountHolder(data[2])
-	transactionAmount, err := strconv.ParseFloat(data[3], 64)
+	trAmt := strings.TrimRight(data[3], "\x00")
+	transactionAmount, err := strconv.ParseFloat(trAmt, 64)
 	if err != nil {
 		fmt.Println("ERROR: Could not convert transaction amount to float64")
-		os.Exit(1)
+		//log.Fatal(err)
+		return
 	}
 
 	transaction := PAINTrans{sender, receiver, transactionAmount}
@@ -48,8 +51,6 @@ func ProcessPAIN(data []string) {
 	res := false
 	// Save transaction
 	res = savePAINTransaction(transaction)
-	// Send transaction
-	res = sendPAINTransaction(transaction)
 	// Notify
 	if res {
 		fmt.Println("1")
@@ -77,19 +78,9 @@ func parseAccountHolder(account string) (accountHolder AccountHolder) {
 }
 
 func savePAINTransaction(transaction PAINTrans) (res bool) {
-	// @TODO Return transaction guid
 	fmt.Printf("Save transaction %v", transaction)
 
-	res = true
-	return
-}
-
-func sendPAINTransaction(transaction PAINTrans) (res bool) {
-	fmt.Printf("Send transaction %v", transaction)
-	// Check if sender is local
-	// Check if recipient is local
-	// Adjust balances if local
-	// Notify
+	// Save to database
 
 	res = true
 	return

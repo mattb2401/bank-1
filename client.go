@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/ksred/bank/payments"
+	"net"
 	"os"
 	"strings"
 )
@@ -21,15 +22,18 @@ func runClient() {
 			os.Exit(0)
 		}
 
-		processCommand(text)
+		// @TODO Send to server over TCP or similar
+		sendToServer(text)
 	}
 }
 
 func processCommand(text string) {
+	// @TODO Receive this comm over TCP on server side
 	// Commands are received split by tilde (~)
 	// command~DATA
 
 	cleanText := strings.Replace(text, "\n", "", -1)
+	fmt.Printf("### %s ####\n", cleanText)
 	command := strings.Split(cleanText, "~")
 
 	// Check if we received a command
@@ -57,4 +61,14 @@ func processCommand(text string) {
 		fmt.Println("No valid command received")
 		break
 	}
+}
+
+func sendToServer(text string) {
+	// Connect to this socket
+	conn, _ := net.Dial(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
+	// Send to socket
+	fmt.Fprintf(conn, text+"\n")
+	// Listen for reply
+	message, _ := bufio.NewReader(conn).ReadString('\n')
+	fmt.Print("Message from server: " + message)
 }
