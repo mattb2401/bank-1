@@ -13,6 +13,9 @@ const (
 )
 
 func runServer() {
+	// @TODO Use TLS http://stackoverflow.com/questions/22666163/golang-tls-with-selfsigned-certificate
+	// https://github.com/nareix/tls-example
+
 	// Listen for incoming connections.
 	l, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
 	if err != nil {
@@ -43,13 +46,14 @@ func handleRequest(conn net.Conn) {
 	if err != nil {
 		fmt.Println("Error reading:", err.Error())
 	}
+	s := string(buf[:])
+	// Process
+	result := processCommand(s)
+
 	// @TODO These responses should be from the goroutine
 	// Send a response back to person contacting us.
-	conn.Write([]byte("Message received.\n"))
+	conn.Write([]byte(result + "\n"))
 	// Close the connection when you're done with it.
 	conn.Close()
 
-	s := string(buf[:])
-	// Process
-	processCommand(s)
 }

@@ -1,0 +1,8 @@
+{
+    "MySQLUser"         :   "mysql_user",
+    "MySQLPass"         :   "mysql_password",
+    "MySQLHost"         :   "ip_address",
+    "MySQLPort"         :   "port",
+    "MySQLDB"           :   "db_name",
+    "TimeZone"          :   "America/New_York"
+}

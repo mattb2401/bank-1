@@ -2,17 +2,11 @@ package payments
 
 import (
 	"fmt"
-	//"log"
+	"log"
 	"os"
 	"strconv"
 	"strings"
 )
-
-type PAINTrans struct {
-	sender   AccountHolder
-	receiver AccountHolder
-	amount   float64
-}
 
 type AccountHolder struct {
 	accountNumber int64
@@ -26,19 +20,25 @@ func CheckPayment() {
 	fmt.Println("Payment Check")
 }
 
-func ProcessPAIN(data []string) {
+func ProcessPAIN(data []string) (res string) {
 	fmt.Println("Validating PAIN ... ")
 
-	//There must be at least 4 elements
-	if len(data) < 4 {
+	//There must be at least 5 elements
+	if len(data) < 5 {
 		fmt.Println("ERROR: Not all data is present. Run pain~help to check for needed PAIN data")
 		os.Exit(1)
 	}
 
 	// Validate input
-	sender := parseAccountHolder(data[1])
-	receiver := parseAccountHolder(data[2])
-	trAmt := strings.TrimRight(data[3], "\x00")
+	painType, err := strconv.ParseInt(data[1], 10, 64)
+	if err != nil {
+		fmt.Println("Could not get type of PAIN transaction")
+		log.Fatal(err)
+		return
+	}
+	sender := parseAccountHolder(data[2])
+	receiver := parseAccountHolder(data[3])
+	trAmt := strings.TrimRight(data[4], "\x00")
 	transactionAmount, err := strconv.ParseFloat(trAmt, 64)
 	if err != nil {
 		fmt.Println("ERROR: Could not convert transaction amount to float64")
@@ -46,15 +46,12 @@ func ProcessPAIN(data []string) {
 		return
 	}
 
-	transaction := PAINTrans{sender, receiver, transactionAmount}
+	transaction := PAINTrans{painType, sender, receiver, transactionAmount}
 
-	res := false
 	// Save transaction
-	res = savePAINTransaction(transaction)
-	// Notify
-	if res {
-		fmt.Println("1")
-	}
+	res = processPAINTransaction(transaction)
+
+	return
 }
 
 func parseAccountHolder(account string) (accountHolder AccountHolder) {
@@ -75,14 +72,4 @@ func parseAccountHolder(account string) (accountHolder AccountHolder) {
 
 	accountHolder = AccountHolder{accountAccNum, accountBankNum}
 	return
-}
-
-func savePAINTransaction(transaction PAINTrans) (res bool) {
-	fmt.Printf("Save transaction %v", transaction)
-
-	// Save to database
-
-	res = true
-	return
-
 }
