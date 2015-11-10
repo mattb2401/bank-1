@@ -13,6 +13,8 @@ type AccountHolder struct {
 	bankNumber    int64
 }
 
+const TRANSACTION_FEE = 0.0001 // 0.01%
+
 func main() {
 }
 
@@ -49,7 +51,7 @@ func ProcessPAIN(data []string) (res string) {
 	transaction := PAINTrans{painType, sender, receiver, transactionAmount}
 
 	// Save transaction
-	res = processPAINTransaction(transaction)
+	res = processPAINTransaction(transaction, TRANSACTION_FEE)
 
 	return
 }

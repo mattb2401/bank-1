@@ -28,10 +28,11 @@ type PAINTrans struct {
 	amount   float64
 }
 
-func processPAINTransaction(transaction PAINTrans) (res string) {
+func processPAINTransaction(transaction PAINTrans, TRANSACTION_FEE float64) (res string) {
 	fmt.Printf("Process transaction %v", transaction)
 
 	// Checks for transaction (avail balance, accounts open, etc)
+	savePainTransaction(transaction, TRANSACTION_FEE)
 	// Save in transaction table
 	// Amend sender and receiver accounts
 	// Amend bank's account with fee addition

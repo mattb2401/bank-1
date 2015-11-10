@@ -53,7 +53,7 @@ func checkBalance(account AccountHolder) (balance int) {
 	return
 }
 
-func savePainTransaction(db *sql.DB, transaction PAINTrans, feeAmount float64) {
+func savePainTransaction(transaction PAINTrans, feePerc float64) {
 	configuration := Configuration{}
 	loadConfig(&configuration)
 
@@ -64,7 +64,7 @@ func savePainTransaction(db *sql.DB, transaction PAINTrans, feeAmount float64) {
 	}
 	// Prepare statement for inserting data
 	insertStatement := "INSERT INTO transactions (`transaction`, `type`, `senderAccountNum`, `senderBankNum`, `receiverAccountNum`, `receiverBankNum`, `transactionAmount`, `feeAmount`, `timestamp`) "
-	insertStatement += "VALUES(?, ?, ?, ?, ?, ?, ?, ?)"
+	insertStatement += "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
 	stmtIns, err := db.Prepare(insertStatement)
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
@@ -75,6 +75,9 @@ func savePainTransaction(db *sql.DB, transaction PAINTrans, feeAmount float64) {
 	//sqlChange, _ := strconv.ParseFloat(strings.Replace(stock.Change, ",", "", -1), 64)
 	t := time.Now()
 	sqlTime := int32(t.Unix())
+
+	// The feePerc is a percentage, convert to amount
+	feeAmount := transaction.amount * feePerc
 
 	_, err = stmtIns.Exec("pain", transaction.painType, transaction.sender.accountNumber, transaction.sender.bankNumber, transaction.receiver.accountNumber, transaction.receiver.bankNumber,
 		transaction.amount, feeAmount, sqlTime)
