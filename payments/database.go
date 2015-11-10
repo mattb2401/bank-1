@@ -49,7 +49,7 @@ func loadDatabase() (db *sql.DB) {
 	return
 }
 
-func checkBalance(account AccountHolder) (balance int) {
+func checkBalance(account AccountHolder) (balance float64) {
 	return
 }
 
