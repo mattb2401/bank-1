@@ -9,8 +9,8 @@ import (
 )
 
 type AccountHolder struct {
-	accountNumber int64
-	bankNumber    int64
+	accountNumber string
+	bankNumber    string
 }
 
 const TRANSACTION_FEE = 0.0001 // 0.01%
@@ -58,20 +58,12 @@ func ProcessPAIN(data []string) (res string) {
 
 func parseAccountHolder(account string) (accountHolder AccountHolder) {
 	accountStr := strings.Split(account, "@")
-	accountAccNum, err := strconv.ParseInt(accountStr[0], 10, 64)
-	if err != nil {
-		fmt.Println("ERROR: Could not convert account details S1")
-		os.Exit(1)
-	}
-	if len(accountStr[1]) == 0 {
-		accountStr[1] = "0"
-	}
-	accountBankNum, err := strconv.ParseInt(accountStr[1], 10, 64)
-	if err != nil {
-		fmt.Println("ERROR: Could not convert account details S2")
-		os.Exit(1)
+
+	if len(accountStr) < 2 {
+		fmt.Println("ERROR: Could not parse account holders")
+		return
 	}
 
-	accountHolder = AccountHolder{accountAccNum, accountBankNum}
+	accountHolder = AccountHolder{accountStr[0], accountStr[1]}
 	return
 }

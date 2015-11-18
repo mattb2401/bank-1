@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/ksred/bank/accounts"
 	"github.com/ksred/bank/payments"
 	"net"
 	"os"
@@ -52,6 +53,12 @@ func processCommand(text string) (result string) {
 		result = payments.ProcessPAIN(command)
 	case "camt":
 	case "acmt":
+		// Check "help"
+		if command[1] == "help" {
+			fmt.Println("") // @TODO Help section
+			return
+		}
+		result = accounts.ProcessAccount(command)
 	case "remt":
 	case "reda":
 	case "pacs":
