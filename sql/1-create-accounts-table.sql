@@ -13,8 +13,8 @@ available balance
 */
 CREATE TABLE IF NOT EXISTS accounts (
 `id` int NOT NULL AUTO_INCREMENT,
-`accountNum` char(36) NOT NULL, 
-`bankNum` char(36) NOT NULL, 
+`accountNumber` char(36) NOT NULL, 
+`bankNumber` char(36) NOT NULL, 
 `accountHolderName` text NOT NULL, 
 `accountBalance` float NOT NULL, 
 `overdraft` float NOT NULL, 

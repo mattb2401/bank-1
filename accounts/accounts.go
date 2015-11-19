@@ -80,6 +80,13 @@ type AccountDetails struct {
 	Timestamp         int
 }
 
+// Set up some defaults
+const (
+	BANK_NUMBER       = "a0299975-b8e2-4358-8f1a-911ee12dbaac"
+	OPENING_BALANCE   = 100.
+	OPENING_OVERDRAFT = 0.
+)
+
 func ProcessAccount(data []string) (result string) {
 	acmtType, err := strconv.ParseInt(data[1], 10, 64)
 	if err != nil {
@@ -125,10 +132,53 @@ func openAccount(data []string) (result string) {
 		result = "ERROR: acmt transactions must be as follows:acmt~AcmtType~AccountHolderGivenName~AccountHolderFamilyName~AccountHolderDateOfBirth~AccountHolderIdentificationNumber~AccountHolderContactNumber1~AccountHolderContactNumber2~AccountHolderEmailAddress~AccountHolderAddressLine1~AccountHolderAddressLine2~AccountHolderAddressLine3~AccountHolderPostalCode"
 		return
 	}
-	// Test: acmt~1~Kyle~Redelinghuys~19000101~8737364517283~~~~~~~
+
+	// Test: acmt~1~Kyle~Redelinghuys~19000101~190001011234098~1112223456~~email@domain.com~Physical Address 1~~1000~
 	// Check if account already exists, check on ID number
 	accountHolder := getAccountMeta(data[5])
 	fmt.Println(accountHolder)
+	if accountHolder.AccountNumber != "" {
+		return "1~" + accountHolder.AccountNumber + "~Account already open."
+	}
+
 	// Create account
+	accountHolderObject := setAccountDetails(data)
+	accountHolderDetailsObject := setAccountHolderDetails(data)
+	createdAccountHolder := createAccount(accountHolderObject, accountHolderDetailsObject)
+
+	fmt.Println(createdAccountHolder)
+	return
+}
+
+func setAccountDetails(data []string) (accountDetails AccountDetails) {
+	// @TODO Add integrity checks
+	accountDetails.BankNumber = BANK_NUMBER
+	accountDetails.AccountHolderName = data[3] + "," + data[2] // Family Name, Given Name
+	accountDetails.AccountBalance = OPENING_BALANCE
+	accountDetails.Overdraft = OPENING_OVERDRAFT
+	accountDetails.AvailableBalance = OPENING_BALANCE + OPENING_OVERDRAFT
+
+	return
+}
+
+func setAccountHolderDetails(data []string) (accountHolderDetails AccountHolderDetails) {
+	//result = "ERROR: acmt transactions must be as follows:acmt~AcmtType~AccountHolderGivenName~AccountHolderFamilyName~AccountHolderDateOfBirth~AccountHolderIdentificationNumber~AccountHolderContactNumber1~AccountHolderContactNumber2~AccountHolderEmailAddress~AccountHolderAddressLine1~AccountHolderAddressLine2~AccountHolderAddressLine3~AccountHolderPostalCode"
+
+	// @TODO Convert DOB and PostalCode to int
+
+	// @TODO Integrity checks
+	accountHolderDetails.BankNumber = BANK_NUMBER
+	accountHolderDetails.GivenName = data[2]
+	accountHolderDetails.FamilyName = data[3]
+	//accountHolderDetails.DateOfBirth = data[4]
+	accountHolderDetails.IdentificationNumber = data[5]
+	accountHolderDetails.ContactNumber1 = data[6]
+	accountHolderDetails.ContactNumber2 = data[7]
+	accountHolderDetails.EmailAddress = data[8]
+	accountHolderDetails.AddressLine1 = data[9]
+	accountHolderDetails.AddressLine2 = data[10]
+	accountHolderDetails.AddressLine3 = data[11]
+	//accountHolderDetails.PostalCode = data[12]
+
 	return
 }

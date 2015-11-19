@@ -9,8 +9,9 @@ import (
 	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	//"github.com/satori/go.uuid"
 	"os"
-	//"time"
+	"time"
 )
 
 type Configuration struct {
@@ -53,8 +54,7 @@ func loadDatabase() (db *sql.DB) {
 	return
 }
 
-/*
-func savePainTransaction(transaction PAINTrans, feePerc float64) {
+func createAccount(accountDetails AccountDetails, accountHolderDetails AccountHolderDetails) (newAccountDetails AccountDetails) {
 	configuration := Configuration{}
 	loadConfig(&configuration)
 
@@ -63,9 +63,11 @@ func savePainTransaction(transaction PAINTrans, feePerc float64) {
 		fmt.Println("Could not connect to database")
 		return
 	}
+
 	// Prepare statement for inserting data
-	insertStatement := "INSERT INTO transactions (`transaction`, `type`, `senderAccountNum`, `senderBankNum`, `receiverAccountNum`, `receiverBankNum`, `transactionAmount`, `feeAmount`, `timestamp`) "
-	insertStatement += "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	// Create account
+	insertStatement := "INSERT INTO accounts (`accountNum`, `bankNum`, `accountHolderName`, `accountBalance`, `overdraft`, `availableBalance`, `timestamp`) "
+	insertStatement += "VALUES(?, ?, ?, ?, ?, ?, ?)"
 	stmtIns, err := db.Prepare(insertStatement)
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
@@ -73,22 +75,41 @@ func savePainTransaction(transaction PAINTrans, feePerc float64) {
 	defer stmtIns.Close() // Close the statement when we leave main() / the program terminates
 
 	// Convert variables
-	//sqlChange, _ := strconv.ParseFloat(strings.Replace(stock.Change, ",", "", -1), 64)
 	t := time.Now()
 	sqlTime := int32(t.Unix())
 
-	// The feePerc is a percentage, convert to amount
-	feeAmount := transaction.amount * feePerc
+	// Generate account number
+	//accountDetails.AccountNumber = uuid.NewV4() // @TODO Convert to string. https://github.com/satori/go.uuid/blob/master/uuid.go#L409
+	accountDetails.AccountNumber = ""
 
-	_, err = stmtIns.Exec("pain", transaction.painType, transaction.sender.accountNumber, transaction.sender.bankNumber, transaction.receiver.accountNumber, transaction.receiver.bankNumber,
-		transaction.amount, feeAmount, sqlTime)
+	_, err = stmtIns.Exec(accountDetails.AccountNumber, accountDetails.BankNumber, accountDetails.AccountHolderName, accountDetails.Overdraft, accountDetails.AvailableBalance, sqlTime)
 
 	if err != nil {
 		fmt.Println("Could not save results: " + err.Error())
 	}
+
+	// Create account meta
+	insertStatement = "INSERT INTO accounts_meta (`accountNumber`, `bankNumber`, `accountHolderGivenName`, `accountHolderFamilyName`, `accountHolderDateOfBirth`, `accountHolderIdentificationNumber`, `accountHolderContactNumber1`, `accountHolderContactNumber2`, `accountHolderEmailAddress`, `accountHolderAddressLine1`, `accountHolderAddressLine2`, `accountHolderAddressLine3`, `accountHolderPostalCode`, `timestamp`) "
+	insertStatement += "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	stmtIns, err = db.Prepare(insertStatement)
+	if err != nil {
+		panic(err.Error()) // proper error handling instead of panic in your app
+	}
+	defer stmtIns.Close() // Close the statement when we leave main() / the program terminates
+
+	accountHolderDetails.AccountNumber = accountDetails.AccountNumber
+
+	_, err = stmtIns.Exec(accountHolderDetails.AccountNumber, accountHolderDetails.BankNumber, accountHolderDetails.GivenName, accountHolderDetails.FamilyName, accountHolderDetails.DateOfBirth, accountHolderDetails.IdentificationNumber, accountHolderDetails.ContactNumber1, accountHolderDetails.ContactNumber2, accountHolderDetails.EmailAddress, accountHolderDetails.AddressLine1, accountHolderDetails.AddressLine2, accountHolderDetails.AddressLine3,
+		accountHolderDetails.PostalCode, sqlTime)
+
+	if err != nil {
+		fmt.Println("Could not save results: " + err.Error())
+	}
+
 	defer db.Close()
+
+	return
 }
-*/
 
 func getAccountDetails(id string) (accountDetails AccountDetails) {
 	configuration := Configuration{}
@@ -161,7 +182,7 @@ func getAccountMeta(id string) (accountDetails AccountHolderDetails) {
 	}
 
 	if count > 1 {
-		//@TODO Throw error
+		//@TODO Allow for a customer to have more than one account
 		fmt.Println("ERROR: More than one account found")
 		return
 	}
