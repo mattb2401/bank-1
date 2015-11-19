@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS accounts_meta (
 `id` int NOT NULL AUTO_INCREMENT,
-`accountNum` char(36) NOT NULL,
-`bankNum` char(36) NOT NULL,
+`accountNumber` char(36) NOT NULL,
+`bankNumber` char(36) NOT NULL,
 `accountHolderGivenName` text NOT NULL, 
 `accountHolderFamilyName` text NOT NULL, 
 `accountHolderDateOfBirth` text NOT NULL, 

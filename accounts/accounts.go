@@ -55,6 +55,8 @@ Accounts (acmt) transactions are as follows:
    AccountHolderPostalCode
 */
 type AccountHolderDetails struct {
+	AccountNumber        string
+	BankNumber           string
 	GivenName            string
 	FamilyName           string
 	DateOfBirth          int
@@ -68,6 +70,16 @@ type AccountHolderDetails struct {
 	PostalCode           int
 }
 
+type AccountDetails struct {
+	AccountNumber     string
+	BankNumber        string
+	AccountHolderName string
+	AccountBalance    float64
+	Overdraft         float64
+	AvailableBalance  float64
+	Timestamp         int
+}
+
 func ProcessAccount(data []string) (result string) {
 	acmtType, err := strconv.ParseInt(data[1], 10, 64)
 	if err != nil {
@@ -78,12 +90,12 @@ func ProcessAccount(data []string) (result string) {
 
 	// Switch on the acmt type
 	switch acmtType {
-	case 1:
-	case 7:
+	case 1, 7:
 		/*
 		   @TODO
 		   The differences between AccountOpeningInstructionV05 and AccountOpeningRequestV02 will be explored in detail, for now we treat the same - open an account
 		*/
+		fmt.Println("Processing accountdata")
 		result = openAccount(data)
 		break
 	default:
@@ -109,11 +121,14 @@ func openAccount(data []string) (result string) {
 	   AccountHolderPostalCode
 	*/
 	if len(data) < 13 {
-		fmt.Println("ERROR: Not all fields present for acocunt creation")
+		fmt.Println("ERROR: Not all fields present for account creation")
 		result = "ERROR: acmt transactions must be as follows:acmt~AcmtType~AccountHolderGivenName~AccountHolderFamilyName~AccountHolderDateOfBirth~AccountHolderIdentificationNumber~AccountHolderContactNumber1~AccountHolderContactNumber2~AccountHolderEmailAddress~AccountHolderAddressLine1~AccountHolderAddressLine2~AccountHolderAddressLine3~AccountHolderPostalCode"
 		return
 	}
-	// Check if account already exists
+	// Test: acmt~1~Kyle~Redelinghuys~19000101~8737364517283~~~~~~~
+	// Check if account already exists, check on ID number
+	accountHolder := getAccountMeta(data[5])
+	fmt.Println(accountHolder)
 	// Create account
 	return
 }

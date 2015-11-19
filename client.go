@@ -47,7 +47,7 @@ func processCommand(text string) (result string) {
 	case "pain":
 		// Check "help"
 		if command[1] == "help" {
-			fmt.Println("Format of PAIN transaction:\npain\npainTyep~senderAccountNumber@SenderBankNumber\nreceiverAccountNumber@ReceiverBankNumber\ntransactionAmount\n\nBank numbers may be left void if bank is local")
+			fmt.Println("Format of PAIN transaction:\npain\npainType~senderAccountNumber@SenderBankNumber\nreceiverAccountNumber@ReceiverBankNumber\ntransactionAmount\n\nBank numbers may be left void if bank is local")
 			return
 		}
 		result = payments.ProcessPAIN(command)
