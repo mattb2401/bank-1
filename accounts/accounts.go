@@ -55,6 +55,11 @@ Accounts (acmt) transactions are as follows:
    AccountHolderAddressLine3~
    AccountHolderPostalCode
 */
+type AccountHolder struct {
+	AccountNumber string
+	BankNumber    string
+}
+
 type AccountHolderDetails struct {
 	AccountNumber        string
 	BankNumber           string
@@ -115,19 +120,6 @@ func ProcessAccount(data []string) (result string) {
 
 func openAccount(data []string) (result string) {
 	// Validate string against required info/length
-	/* acmt~1~
-	   AccountHolderGivenName~
-	   AccountHolderFamilyName~
-	   AccountHolderDateOfBirth~
-	   AccountHolderIdentificationNumber~
-	   AccountHolderContactNumber1~
-	   AccountHolderContactNumber2~
-	   AccountHolderEmailAddress~
-	   AccountHolderAddressLine1~
-	   AccountHolderAddressLine2~
-	   AccountHolderAddressLine3~
-	   AccountHolderPostalCode
-	*/
 	if len(data) < 13 {
 		fmt.Println("ERROR: Not all fields present for account creation")
 		result = "ERROR: acmt transactions must be as follows:acmt~AcmtType~AccountHolderGivenName~AccountHolderFamilyName~AccountHolderDateOfBirth~AccountHolderIdentificationNumber~AccountHolderContactNumber1~AccountHolderContactNumber2~AccountHolderEmailAddress~AccountHolderAddressLine1~AccountHolderAddressLine2~AccountHolderAddressLine3~AccountHolderPostalCode"

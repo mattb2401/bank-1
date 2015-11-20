@@ -8,12 +8,13 @@ import (
 	"strings"
 )
 
-type AccountHolder struct {
-	accountNumber string
-	bankNumber    string
-}
-
 const TRANSACTION_FEE = 0.0001 // 0.01%
+
+// @TODO Have this struct not repeat in payments and accounts
+type AccountHolder struct {
+	AccountNumber string
+	BankNumber    string
+}
 
 func main() {
 }

@@ -32,8 +32,14 @@ func processPAINTransaction(transaction PAINTrans, TRANSACTION_FEE float64) (res
 	fmt.Printf("Process transaction %v", transaction)
 
 	// Checks for transaction (avail balance, accounts open, etc)
-	savePainTransaction(transaction, TRANSACTION_FEE)
+	balanceAvailable := checkBalance(transaction.sender)
+	if balanceAvailable < transaction.amount {
+		fmt.Println("ERROR: Insufficient funds available")
+		res = "0~Insufficient funds"
+		return
+	}
 	// Save in transaction table
+	savePainTransaction(transaction, TRANSACTION_FEE)
 	// Amend sender and receiver accounts
 	// Amend bank's account with fee addition
 
