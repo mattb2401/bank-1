@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"github.com/ksred/bank/accounts"
 	"github.com/ksred/bank/payments"
@@ -42,6 +43,9 @@ func processCommand(text string) (result string) {
 		fmt.Println("No command received")
 		return
 	}
+
+	// Remove null termination from data
+	command[len(command)-1] = string(bytes.Trim([]byte(command[len(command)-1]), "\x00"))
 
 	switch command[0] {
 	case "pain":

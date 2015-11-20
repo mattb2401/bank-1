@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	//"github.com/satori/go.uuid"
+	"github.com/satori/go.uuid"
 	"os"
 	"time"
 )
@@ -66,7 +66,7 @@ func createAccount(accountDetails AccountDetails, accountHolderDetails AccountHo
 
 	// Prepare statement for inserting data
 	// Create account
-	insertStatement := "INSERT INTO accounts (`accountNum`, `bankNum`, `accountHolderName`, `accountBalance`, `overdraft`, `availableBalance`, `timestamp`) "
+	insertStatement := "INSERT INTO accounts (`accountNumber`, `bankNumber`, `accountHolderName`, `accountBalance`, `overdraft`, `availableBalance`, `timestamp`) "
 	insertStatement += "VALUES(?, ?, ?, ?, ?, ?, ?)"
 	stmtIns, err := db.Prepare(insertStatement)
 	if err != nil {
@@ -79,10 +79,10 @@ func createAccount(accountDetails AccountDetails, accountHolderDetails AccountHo
 	sqlTime := int32(t.Unix())
 
 	// Generate account number
-	//accountDetails.AccountNumber = uuid.NewV4() // @TODO Convert to string. https://github.com/satori/go.uuid/blob/master/uuid.go#L409
-	accountDetails.AccountNumber = ""
+	newUuid := uuid.NewV4()
+	accountDetails.AccountNumber = newUuid.String()
 
-	_, err = stmtIns.Exec(accountDetails.AccountNumber, accountDetails.BankNumber, accountDetails.AccountHolderName, accountDetails.Overdraft, accountDetails.AvailableBalance, sqlTime)
+	_, err = stmtIns.Exec(accountDetails.AccountNumber, accountDetails.BankNumber, accountDetails.AccountHolderName, accountDetails.AccountBalance, accountDetails.Overdraft, accountDetails.AvailableBalance, sqlTime)
 
 	if err != nil {
 		fmt.Println("Could not save results: " + err.Error())
@@ -107,6 +107,8 @@ func createAccount(accountDetails AccountDetails, accountHolderDetails AccountHo
 	}
 
 	defer db.Close()
+
+	newAccountDetails = accountDetails
 
 	return
 }
@@ -142,7 +144,7 @@ func getAccountDetails(id string) (accountDetails AccountDetails) {
 	}
 
 	if count > 1 {
-		//@TODO Throw error
+		//@TODO Allow multiple accounts
 		fmt.Println("ERROR: More than one account found")
 		return
 	}

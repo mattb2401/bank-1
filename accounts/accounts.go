@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 )
 
 /*
@@ -59,7 +60,7 @@ type AccountHolderDetails struct {
 	BankNumber           string
 	GivenName            string
 	FamilyName           string
-	DateOfBirth          int
+	DateOfBirth          int64
 	IdentificationNumber string
 	ContactNumber1       string
 	ContactNumber2       string
@@ -67,7 +68,7 @@ type AccountHolderDetails struct {
 	AddressLine1         string
 	AddressLine2         string
 	AddressLine3         string
-	PostalCode           int
+	PostalCode           int64
 }
 
 type AccountDetails struct {
@@ -133,7 +134,7 @@ func openAccount(data []string) (result string) {
 		return
 	}
 
-	// Test: acmt~1~Kyle~Redelinghuys~19000101~190001011234098~1112223456~~email@domain.com~Physical Address 1~~1000~
+	// Test: acmt~1~Kyle~Redelinghuys~19000101~190001011234098~1112223456~~email@domain.com~Physical Address 1~~~1000
 	// Check if account already exists, check on ID number
 	accountHolder := getAccountMeta(data[5])
 	fmt.Println(accountHolder)
@@ -141,17 +142,21 @@ func openAccount(data []string) (result string) {
 		return "1~" + accountHolder.AccountNumber + "~Account already open."
 	}
 
+	// Remove new line from data
+	data[len(data)-1] = strings.Replace(data[len(data)-1], "\n", "", -1)
+
 	// Create account
 	accountHolderObject := setAccountDetails(data)
 	accountHolderDetailsObject := setAccountHolderDetails(data)
 	createdAccountHolder := createAccount(accountHolderObject, accountHolderDetailsObject)
 
 	fmt.Println(createdAccountHolder)
+	result = createdAccountHolder.AccountNumber
 	return
 }
 
 func setAccountDetails(data []string) (accountDetails AccountDetails) {
-	// @TODO Add integrity checks
+	// @TODO Integrity checks
 	accountDetails.BankNumber = BANK_NUMBER
 	accountDetails.AccountHolderName = data[3] + "," + data[2] // Family Name, Given Name
 	accountDetails.AccountBalance = OPENING_BALANCE
@@ -162,15 +167,23 @@ func setAccountDetails(data []string) (accountDetails AccountDetails) {
 }
 
 func setAccountHolderDetails(data []string) (accountHolderDetails AccountHolderDetails) {
-	//result = "ERROR: acmt transactions must be as follows:acmt~AcmtType~AccountHolderGivenName~AccountHolderFamilyName~AccountHolderDateOfBirth~AccountHolderIdentificationNumber~AccountHolderContactNumber1~AccountHolderContactNumber2~AccountHolderEmailAddress~AccountHolderAddressLine1~AccountHolderAddressLine2~AccountHolderAddressLine3~AccountHolderPostalCode"
+	dob, err := strconv.ParseInt(data[4], 10, 64)
+	if err != nil {
+		fmt.Println("ERROR: Could not convert date")
+		return
+	}
 
-	// @TODO Convert DOB and PostalCode to int
+	postalCode, err := strconv.ParseInt(data[12], 10, 64)
+	if err != nil {
+		fmt.Println("ERROR: Could not convert postal code")
+		return
+	}
 
 	// @TODO Integrity checks
 	accountHolderDetails.BankNumber = BANK_NUMBER
 	accountHolderDetails.GivenName = data[2]
 	accountHolderDetails.FamilyName = data[3]
-	//accountHolderDetails.DateOfBirth = data[4]
+	accountHolderDetails.DateOfBirth = dob
 	accountHolderDetails.IdentificationNumber = data[5]
 	accountHolderDetails.ContactNumber1 = data[6]
 	accountHolderDetails.ContactNumber2 = data[7]
@@ -178,7 +191,7 @@ func setAccountHolderDetails(data []string) (accountHolderDetails AccountHolderD
 	accountHolderDetails.AddressLine1 = data[9]
 	accountHolderDetails.AddressLine2 = data[10]
 	accountHolderDetails.AddressLine3 = data[11]
-	//accountHolderDetails.PostalCode = data[12]
+	accountHolderDetails.PostalCode = postalCode
 
 	return
 }
