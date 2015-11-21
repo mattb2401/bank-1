@@ -2,37 +2,20 @@ package payments
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"os"
+	"github.com/ksred/bank/configuration"
 	"time"
 )
 
-type Configuration struct {
-	TimeZone  string
-	MySQLUser string
-	MySQLPass string
-	MySQLHost string
-	MySQLPort string
-	MySQLDB   string
-}
+var Config configuration.Configuration
 
-func loadConfig(configuration *Configuration) {
-	// Get config
-	file, _ := os.Open("config.json")
-	decoder := json.NewDecoder(file)
-	err := decoder.Decode(&configuration)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
+func SetConfig(config *configuration.Configuration) {
+	Config = *config
 }
 
 func loadDatabase() (db *sql.DB) {
-	configuration := Configuration{}
-	loadConfig(&configuration)
-
-	db, err := sql.Open("mysql", configuration.MySQLUser+":"+configuration.MySQLPass+"@tcp("+configuration.MySQLHost+":"+configuration.MySQLPort+")/"+configuration.MySQLDB)
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
 		fmt.Println("Could not connect to database")
 		return
@@ -50,10 +33,7 @@ func loadDatabase() (db *sql.DB) {
 }
 
 func savePainTransaction(transaction PAINTrans) {
-	configuration := Configuration{}
-	loadConfig(&configuration)
-
-	db, err := sql.Open("mysql", configuration.MySQLUser+":"+configuration.MySQLPass+"@tcp("+configuration.MySQLHost+":"+configuration.MySQLPort+")/"+configuration.MySQLDB)
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
 		fmt.Println("Could not connect to database")
 		return
@@ -84,13 +64,10 @@ func savePainTransaction(transaction PAINTrans) {
 
 //func updateAccounts(sender AccountHolder, receiver AccountHolder, transactionAmount float64, transactionFee float64) {
 func updateAccounts(transaction PAINTrans) {
-	configuration := Configuration{}
-	loadConfig(&configuration)
-
 	t := time.Now()
 	sqlTime := int32(t.Unix())
 
-	db, err := sql.Open("mysql", configuration.MySQLUser+":"+configuration.MySQLPass+"@tcp("+configuration.MySQLHost+":"+configuration.MySQLPort+")/"+configuration.MySQLDB)
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
 		fmt.Println("Could not connect to database")
 		return
@@ -163,9 +140,7 @@ func updateAccounts(transaction PAINTrans) {
 
 // @TODO Look at using accounts.getAccountDetails here
 func checkBalance(account AccountHolder) (balance float64) {
-	configuration := Configuration{}
-	loadConfig(&configuration)
-	db, err := sql.Open("mysql", configuration.MySQLUser+":"+configuration.MySQLPass+"@tcp("+configuration.MySQLHost+":"+configuration.MySQLPort+")/"+configuration.MySQLDB)
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
 		fmt.Println("Could not connect to database")
 		return

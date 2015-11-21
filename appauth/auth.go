@@ -4,12 +4,11 @@ import (
 	"crypto/sha512"
 	"database/sql"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/ksred/bank/configuration"
 	"github.com/satori/go.uuid"
 	"gopkg.in/redis.v3"
-	"os"
 	"time"
 )
 
@@ -17,26 +16,10 @@ const (
 	TOKEN_TTL = time.Hour // One hour
 )
 
-type Configuration struct {
-	TimeZone     string
-	MySQLUser    string
-	MySQLPass    string
-	MySQLHost    string
-	MySQLPort    string
-	MySQLDB      string
-	RedisHost    string
-	RedisPort    string
-	PasswordSalt string
-}
+var Config configuration.Configuration
 
-func loadConfig(configuration *Configuration) {
-	// Get config
-	file, _ := os.Open("config.json")
-	decoder := json.NewDecoder(file)
-	err := decoder.Decode(&configuration)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
+func SetConfig(config *configuration.Configuration) {
+	Config = *config
 }
 
 func ProcessAppAuth(data []string) (result string) {
@@ -75,15 +58,12 @@ func ProcessAppAuth(data []string) (result string) {
 
 func CreateUserPassword(user string, password string) (result string) {
 	//TEST 0~appauth~2~181ac0ae-45cb-461d-b740-15ce33e4612f~testPassword
-	configuration := Configuration{}
-	loadConfig(&configuration)
-
 	// Generate hash
 	hasher := sha512.New()
 	hasher.Write([]byte(password))
 	hash := hex.EncodeToString(hasher.Sum(nil))
 
-	db, err := sql.Open("mysql", configuration.MySQLUser+":"+configuration.MySQLPass+"@tcp("+configuration.MySQLHost+":"+configuration.MySQLPort+")/"+configuration.MySQLDB)
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
 		fmt.Println("Could not connect to database")
 		return
@@ -131,11 +111,8 @@ func CreateUserPassword(user string, password string) (result string) {
 }
 
 func CreateToken(user string, password string) (token string) {
-	configuration := Configuration{}
-	loadConfig(&configuration)
-
 	// Check if username and password match
-	db, err := sql.Open("mysql", configuration.MySQLUser+":"+configuration.MySQLPass+"@tcp("+configuration.MySQLHost+":"+configuration.MySQLPort+")/"+configuration.MySQLDB)
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
 		fmt.Println("Could not connect to database")
 		return
@@ -169,7 +146,7 @@ func CreateToken(user string, password string) (token string) {
 	}
 
 	client := redis.NewClient(&redis.Options{
-		Addr:     configuration.RedisHost + ":" + configuration.RedisPort,
+		Addr:     Config.RedisHost + ":" + Config.RedisPort,
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
@@ -188,11 +165,8 @@ func CreateToken(user string, password string) (token string) {
 
 func CheckToken(token string) (res bool) {
 	//TEST 0~appauth~480e67e3-e2c9-48ee-966c-8d251474b669
-	configuration := Configuration{}
-	loadConfig(&configuration)
-
 	client := redis.NewClient(&redis.Options{
-		Addr:     configuration.RedisHost + ":" + configuration.RedisPort,
+		Addr:     Config.RedisHost + ":" + Config.RedisPort,
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
@@ -218,11 +192,8 @@ func CheckToken(token string) (res bool) {
 
 func GetUserFromToken(token string) (user string) {
 	//TEST 0~appauth~~181ac0ae-45cb-461d-b740-15ce33e4612f~testPassword
-	configuration := Configuration{}
-	loadConfig(&configuration)
-
 	client := redis.NewClient(&redis.Options{
-		Addr:     configuration.RedisHost + ":" + configuration.RedisPort,
+		Addr:     Config.RedisHost + ":" + Config.RedisPort,
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})

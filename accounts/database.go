@@ -6,38 +6,21 @@ package accounts
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/ksred/bank/configuration"
 	"github.com/satori/go.uuid"
-	"os"
 	"time"
 )
 
-type Configuration struct {
-	TimeZone  string
-	MySQLUser string
-	MySQLPass string
-	MySQLHost string
-	MySQLPort string
-	MySQLDB   string
-}
+var Config configuration.Configuration
 
-func loadConfig(configuration *Configuration) {
-	// Get config
-	file, _ := os.Open("config.json")
-	decoder := json.NewDecoder(file)
-	err := decoder.Decode(&configuration)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
+func SetConfig(config *configuration.Configuration) {
+	Config = *config
 }
 
 func loadDatabase() (db *sql.DB) {
-	configuration := Configuration{}
-	loadConfig(&configuration)
-
-	db, err := sql.Open("mysql", configuration.MySQLUser+":"+configuration.MySQLPass+"@tcp("+configuration.MySQLHost+":"+configuration.MySQLPort+")/"+configuration.MySQLDB)
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
 		fmt.Println("Could not connect to database")
 		return
@@ -55,10 +38,7 @@ func loadDatabase() (db *sql.DB) {
 }
 
 func createAccount(accountDetails AccountDetails, accountHolderDetails AccountHolderDetails) (newAccountDetails AccountDetails) {
-	configuration := Configuration{}
-	loadConfig(&configuration)
-
-	db, err := sql.Open("mysql", configuration.MySQLUser+":"+configuration.MySQLPass+"@tcp("+configuration.MySQLHost+":"+configuration.MySQLPort+")/"+configuration.MySQLDB)
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
 		fmt.Println("Could not connect to database")
 		return
@@ -114,9 +94,7 @@ func createAccount(accountDetails AccountDetails, accountHolderDetails AccountHo
 }
 
 func getAccountDetails(id string) (accountDetails AccountDetails) {
-	configuration := Configuration{}
-	loadConfig(&configuration)
-	db, err := sql.Open("mysql", configuration.MySQLUser+":"+configuration.MySQLPass+"@tcp("+configuration.MySQLHost+":"+configuration.MySQLPort+")/"+configuration.MySQLDB)
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
 		fmt.Println("Could not connect to database")
 		return
@@ -153,9 +131,7 @@ func getAccountDetails(id string) (accountDetails AccountDetails) {
 }
 
 func getAccountMeta(id string) (accountDetails AccountHolderDetails) {
-	configuration := Configuration{}
-	loadConfig(&configuration)
-	db, err := sql.Open("mysql", configuration.MySQLUser+":"+configuration.MySQLPass+"@tcp("+configuration.MySQLHost+":"+configuration.MySQLPort+")/"+configuration.MySQLDB)
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
 		fmt.Println("Could not connect to database")
 		return
