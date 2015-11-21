@@ -1,7 +1,8 @@
 package main
 
 import (
-	"bytes"
+	"crypto/rand"
+	"crypto/tls"
 	"fmt"
 	"github.com/ksred/bank/accounts"
 	"github.com/ksred/bank/appauth"
@@ -12,21 +13,28 @@ import (
 )
 
 const (
-	CONN_HOST = "localhost"
-	CONN_PORT = "3333"
+	// This is the FQDN from the certs generated
+	CONN_HOST = "bank.ksred.me"
+	CONN_PORT = "6600"
 	CONN_TYPE = "tcp"
 )
 
 func runServer() {
-	// @TODO Use TLS http://stackoverflow.com/questions/22666163/golang-tls-with-selfsigned-certificate
-	// https://github.com/nareix/tls-example
+	cert, err := tls.LoadX509KeyPair("certs/server.pem", "certs/server.key")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Load config and generate seed
+	config := tls.Config{Certificates: []tls.Certificate{cert}, ClientAuth: tls.RequireAnyClientCert}
+	config.Rand = rand.Reader
 
 	// Listen for incoming connections.
-	l, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
+	l, err := tls.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT, &config)
 	if err != nil {
-		fmt.Println("Error listening:", err.Error())
-		os.Exit(1)
+		log.Fatal(err)
 	}
+
 	// Close the listener when the application closes.
 	defer l.Close()
 	fmt.Println("Listening on " + CONN_HOST + ":" + CONN_PORT)

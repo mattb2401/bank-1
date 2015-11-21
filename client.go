@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"os"
@@ -27,7 +29,18 @@ func runClient() {
 
 func sendToServer(text string) {
 	// Connect to this socket
-	conn, _ := net.Dial(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
+	cert, err := tls.LoadX509KeyPair("certs/client.pem", "certs/client.key")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	config := tls.Config{Certificates: []tls.Certificate{cert}, InsecureSkipVerify: true}
+	conn, err := tls.Dial(CONN_TYPE, CONN_HOST+":"+CONN_PORT, &config)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Send to socket
 	fmt.Fprintf(conn, text+"\n")
 	// Listen for reply

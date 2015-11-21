@@ -13,16 +13,16 @@ PRIMARY KEY (`id`)
 );
 
 /* This table must be seeded */
-INSERT INTO `bank_account` VALUES (1, 0, 0)
+INSERT INTO `bank_account` VALUES (1, 0, 0);
 
 CREATE TABLE IF NOT EXISTS bank_transactions (
 `id` int NOT NULL AUTO_INCREMENT,
-`transaction` varchar(4), 
-`type` int, 
-`senderBankNumber` int, 
-`receiverBankNumber` int, 
-`transactionAmount` float, 
-`feeAmount` float, 
-`timestamp` int, 
+`transaction` varchar(4) NOT NULL, 
+`type` int NOT NULL, 
+`senderBankNumber` VARCHAR(36) NOT NULL, 
+`receiverBankNumber` VARCHAR(36) NOT NULL, 
+`transactionAmount` float NOT NULL, 
+`feeAmount` float NOT NULL, 
+`timestamp` int NOT NULL, 
 PRIMARY KEY (`id`)
 );
