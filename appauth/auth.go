@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	TOKEN_TTL = 60 * 60 * 1000 // One hour
+	TOKEN_TTL = time.Hour // One hour
 )
 
 type Configuration struct {
@@ -43,10 +43,16 @@ func ProcessAppAuth(data []string) (result string) {
 	switch data[2] {
 	// Auth an existing account
 	case "1":
-		if len(data) < 4 {
+		// TOKEN~appauth~1
+		if len(data) < 3 {
 			result = "0~Not all required fields present"
 		}
-		CheckToken(data[3])
+		res := CheckToken(data[0])
+		if res {
+			result = "1~Token valid"
+		} else {
+			result = "0~Token not valid"
+		}
 		break
 		// Log in
 	case "2":
@@ -193,13 +199,13 @@ func CheckToken(token string) (res bool) {
 
 	_, err := client.Get(token).Result()
 
+	res = true
+
 	if err == redis.Nil {
 		res = false
 	} else if err != nil {
 		panic(err)
 	}
-
-	res = true
 
 	return
 }

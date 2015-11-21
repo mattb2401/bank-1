@@ -85,6 +85,7 @@ func processCommand(text string) (result string) {
 			result = "0~Incorrect token"
 			return
 		}
+		fmt.Println("Token valid")
 	}
 
 	switch command[1] {
