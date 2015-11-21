@@ -22,26 +22,29 @@ Payments mandates:
 */
 
 type PAINTrans struct {
-	painType int64
-	sender   AccountHolder
-	receiver AccountHolder
-	amount   float64
+	PainType int64
+	Sender   AccountHolder
+	Receiver AccountHolder
+	Amount   float64
+	Fee      float64
 }
 
-func processPAINTransaction(transaction PAINTrans, TRANSACTION_FEE float64) (res string) {
+func processPAINTransaction(transaction PAINTrans) (res string) {
 	fmt.Printf("Process transaction %v", transaction)
 
 	// Checks for transaction (avail balance, accounts open, etc)
-	balanceAvailable := checkBalance(transaction.sender)
-	if balanceAvailable < transaction.amount {
+	balanceAvailable := checkBalance(transaction.Sender)
+	if balanceAvailable < transaction.Amount {
 		fmt.Println("ERROR: Insufficient funds available")
 		res = "0~Insufficient funds"
 		return
 	}
+	// Test: pain~1~1b2ca241-0373-4610-abad-da7b06c50a7b@~181ac0ae-45cb-461d-b740-15ce33e4612f@~20
 	// Save in transaction table
-	savePainTransaction(transaction, TRANSACTION_FEE)
+	savePainTransaction(transaction)
 	// Amend sender and receiver accounts
 	// Amend bank's account with fee addition
+	updateAccounts(transaction)
 
 	res = "true"
 	return

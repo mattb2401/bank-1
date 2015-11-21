@@ -49,7 +49,7 @@ func loadDatabase() (db *sql.DB) {
 	return
 }
 
-func savePainTransaction(transaction PAINTrans, feePerc float64) {
+func savePainTransaction(transaction PAINTrans) {
 	configuration := Configuration{}
 	loadConfig(&configuration)
 
@@ -59,7 +59,7 @@ func savePainTransaction(transaction PAINTrans, feePerc float64) {
 		return
 	}
 	// Prepare statement for inserting data
-	insertStatement := "INSERT INTO transactions (`transaction`, `type`, `senderAccountNum`, `senderBankNum`, `receiverAccountNum`, `receiverBankNum`, `transactionAmount`, `feeAmount`, `timestamp`) "
+	insertStatement := "INSERT INTO transactions (`transaction`, `type`, `senderAccountNumber`, `senderBankNumber`, `receiverAccountNumber`, `receiverBankNumber`, `transactionAmount`, `feeAmount`, `timestamp`) "
 	insertStatement += "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
 	stmtIns, err := db.Prepare(insertStatement)
 	if err != nil {
@@ -67,16 +67,14 @@ func savePainTransaction(transaction PAINTrans, feePerc float64) {
 	}
 	defer stmtIns.Close() // Close the statement when we leave main() / the program terminates
 
-	// Convert variables
-	//sqlChange, _ := strconv.ParseFloat(strings.Replace(stock.Change, ",", "", -1), 64)
 	t := time.Now()
 	sqlTime := int32(t.Unix())
 
 	// The feePerc is a percentage, convert to amount
-	feeAmount := transaction.amount * feePerc
+	feeAmount := transaction.Amount * transaction.Fee
 
-	_, err = stmtIns.Exec("pain", transaction.painType, transaction.sender.AccountNumber, transaction.sender.BankNumber, transaction.receiver.AccountNumber, transaction.receiver.BankNumber,
-		transaction.amount, feeAmount, sqlTime)
+	_, err = stmtIns.Exec("pain", transaction.PainType, transaction.Sender.AccountNumber, transaction.Sender.BankNumber, transaction.Receiver.AccountNumber, transaction.Receiver.BankNumber,
+		transaction.Amount, feeAmount, sqlTime)
 
 	if err != nil {
 		fmt.Println("Could not save results: " + err.Error())
@@ -84,9 +82,13 @@ func savePainTransaction(transaction PAINTrans, feePerc float64) {
 	defer db.Close()
 }
 
-func updateAccounts(sender AccountHolder, receiver AccountHolder, transactionFee int) {
+//func updateAccounts(sender AccountHolder, receiver AccountHolder, transactionAmount float64, transactionFee float64) {
+func updateAccounts(transaction PAINTrans) {
 	configuration := Configuration{}
 	loadConfig(&configuration)
+
+	t := time.Now()
+	sqlTime := int32(t.Unix())
 
 	db, err := sql.Open("mysql", configuration.MySQLUser+":"+configuration.MySQLPass+"@tcp("+configuration.MySQLHost+":"+configuration.MySQLPort+")/"+configuration.MySQLDB)
 	if err != nil {
@@ -95,16 +97,24 @@ func updateAccounts(sender AccountHolder, receiver AccountHolder, transactionFee
 	}
 
 	// Update sender account
+	fmt.Println("Processing transaction...")
+	fmt.Println(transaction)
 	// Only update if account local
-	if sender.BankNumber == "" {
-		updateSenderStatement := "UPDATE accounts SET `balance` = ? AND `availableBalance` = ? WHERE `accountNumber` = ? "
+	if transaction.Sender.BankNumber == "" {
+		fmt.Println("   Processing sender...")
+		updateSenderStatement := "UPDATE accounts SET `accountBalance` = (`accountBalance` - ?), `availableBalance` = (`availableBalance` - ?), `timestamp` = ? WHERE `accountNumber` = ? "
 		stmtUpdSender, err := db.Prepare(updateSenderStatement)
 		if err != nil {
 			panic(err.Error()) // proper error handling instead of panic in your app
 		}
 		defer stmtUpdSender.Close() // Close the statement when we leave main() / the program terminates
 
-		_, err = stmtUpdSender.Exec(0, 0, sender.AccountNumber) // @TODO Send values through
+		fmt.Print("       ")
+		fmt.Println(transaction.Amount + transaction.Fee)
+		fmt.Print("       ")
+		fmt.Println(transaction.Sender.AccountNumber)
+		resUpd, err := stmtUpdSender.Exec(transaction.Amount+transaction.Fee, transaction.Amount+transaction.Fee, sqlTime, transaction.Sender.AccountNumber)
+		fmt.Println(resUpd)
 
 		if err != nil {
 			fmt.Println("Could not save results: " + err.Error())
@@ -115,15 +125,16 @@ func updateAccounts(sender AccountHolder, receiver AccountHolder, transactionFee
 
 	// Update receiver account
 	// Only update if account local
-	if receiver.BankNumber == "" {
-		updateStatementReceiver := "UPDATE accounts SET `balance` = ? AND `availableBalance` = ? WHERE `accountNumber` = ? "
+	if transaction.Receiver.BankNumber == "" {
+		fmt.Println("   Processing receiver...")
+		updateStatementReceiver := "UPDATE accounts SET `accountBalance` = (`accountBalance` + ?), `availableBalance` = (`availableBalance` + ?), `timestamp` = ? WHERE `accountNumber` = ? "
 		stmtUpdReceiver, err := db.Prepare(updateStatementReceiver)
 		if err != nil {
 			panic(err.Error()) // proper error handling instead of panic in your app
 		}
 		defer stmtUpdReceiver.Close() // Close the statement when we leave main() / the program terminates
 
-		_, err = stmtUpdReceiver.Exec(0, 0, receiver.AccountNumber) // @TODO Send values through
+		_, err = stmtUpdReceiver.Exec(transaction.Amount, transaction.Amount, sqlTime, transaction.Receiver.AccountNumber)
 
 		if err != nil {
 			fmt.Println("Could not save results: " + err.Error())
@@ -133,6 +144,20 @@ func updateAccounts(sender AccountHolder, receiver AccountHolder, transactionFee
 	}
 
 	// Add fees to bank holding account
+	fmt.Println("   Processing bank...")
+	// Only one row in this account for now - only holds single holding bank's balance
+	updateBank := "UPDATE `bank_account` SET `balance` = (`balance` + ?), `timestamp` = ?"
+	stmtUpdBank, err := db.Prepare(updateBank)
+	if err != nil {
+		panic(err.Error()) // proper error handling instead of panic in your app
+	}
+	defer stmtUpdBank.Close() // Close the statement when we leave main() / the program terminates
+
+	_, err = stmtUpdBank.Exec(transaction.Amount*transaction.Fee, sqlTime)
+
+	if err != nil {
+		fmt.Println("Could not save results: " + err.Error())
+	}
 	defer db.Close()
 }
 

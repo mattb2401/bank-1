@@ -49,10 +49,10 @@ func ProcessPAIN(data []string) (res string) {
 		return
 	}
 
-	transaction := PAINTrans{painType, sender, receiver, transactionAmount}
+	transaction := PAINTrans{painType, sender, receiver, transactionAmount, TRANSACTION_FEE}
 
 	// Save transaction
-	res = processPAINTransaction(transaction, TRANSACTION_FEE)
+	res = processPAINTransaction(transaction)
 
 	return
 }
