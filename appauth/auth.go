@@ -191,14 +191,15 @@ func CheckToken(token string) (res bool) {
 		DB:       0,  // use default DB
 	})
 
-	// @FIXME Throwing error
-	user, err := client.Get(token).Result()
-	if err != nil {
-		panic(err)
+	_, err := client.Get(token).Result()
+
+	if err == redis.Nil {
+		res = false
+		return
 	}
 
-	if user == "" {
-		res = false
+	if err != nil {
+		panic(err)
 	}
 
 	res = true
