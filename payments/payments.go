@@ -2,6 +2,7 @@ package payments
 
 import (
 	"fmt"
+	"github.com/ksred/bank/appauth"
 	"log"
 	"os"
 	"strconv"
@@ -46,6 +47,13 @@ func ProcessPAIN(data []string) (res string) {
 	if err != nil {
 		fmt.Println("ERROR: Could not convert transaction amount to float64")
 		//log.Fatal(err)
+		return
+	}
+
+	// Check if sender valid
+	tokenUser := appauth.GetUserFromToken(data[0])
+	if tokenUser != sender.AccountNumber {
+		res = "0~Sender not valid"
 		return
 	}
 
