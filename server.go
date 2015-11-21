@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/ksred/bank/accounts"
 	"github.com/ksred/bank/appauth"
+	"github.com/ksred/bank/configuration"
 	"github.com/ksred/bank/payments"
 	"log"
 	"net"
@@ -21,6 +22,8 @@ const (
 	CONN_TYPE = "tcp"
 )
 
+var Config configuration.Configuration
+
 func runServer() {
 	cert, err := tls.LoadX509KeyPair("certs/server.pem", "certs/server.key")
 	if err != nil {
@@ -30,6 +33,13 @@ func runServer() {
 	// Load config and generate seed
 	config := tls.Config{Certificates: []tls.Certificate{cert}, ClientAuth: tls.RequireAnyClientCert}
 	config.Rand = rand.Reader
+
+	// Load app config
+	Config := configuration.LoadConfig()
+	// Set config in packages
+	accounts.SetConfig(&Config)
+	payments.SetConfig(&Config)
+	appauth.SetConfig(&Config)
 
 	// Listen for incoming connections.
 	l, err := tls.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT, &config)
@@ -62,6 +72,7 @@ func handleRequest(conn net.Conn) {
 		fmt.Println("Error reading:", err.Error())
 	}
 	s := string(buf[:])
+
 	// Process
 	result := processCommand(s)
 
