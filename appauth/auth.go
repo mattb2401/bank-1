@@ -172,7 +172,7 @@ func CreateToken(user string, password string) (token string) {
 	token = newUuid.String()
 
 	// @TODO Remove all tokens for this user
-	err = client.Set(user, token, TOKEN_TTL).Err()
+	err = client.Set(token, user, TOKEN_TTL).Err()
 	if err != nil {
 		panic(err)
 	}
@@ -195,10 +195,7 @@ func CheckToken(token string) (res bool) {
 
 	if err == redis.Nil {
 		res = false
-		return
-	}
-
-	if err != nil {
+	} else if err != nil {
 		panic(err)
 	}
 
