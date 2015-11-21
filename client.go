@@ -2,10 +2,9 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"crypto/tls"
 	"fmt"
-	"net"
+	"log"
 	"os"
 )
 

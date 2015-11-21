@@ -197,14 +197,20 @@ func CheckToken(token string) (res bool) {
 		DB:       0,  // use default DB
 	})
 
-	_, err := client.Get(token).Result()
-
-	res = true
+	user, err := client.Get(token).Result()
 
 	if err == redis.Nil {
 		res = false
 	} else if err != nil {
 		panic(err)
+	} else {
+		// Extend token
+		err := client.Set(user, token, TOKEN_TTL).Err()
+		if err != nil {
+			panic(err)
+		}
+
+		res = true
 	}
 
 	return

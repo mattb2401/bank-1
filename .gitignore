@@ -4,3 +4,5 @@ rethinkdb_data/log_file
 rethinkdb_data/metadata
 
 config.json
+
+*.orig
