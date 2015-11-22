@@ -76,6 +76,10 @@ func updateAccounts(transaction PAINTrans) {
 	// Update sender account
 	fmt.Println("Processing transaction...")
 	fmt.Println(transaction)
+
+	// The feePerc is a percentage, convert to amount
+	feeAmount := transaction.Amount * transaction.Fee
+
 	// Only update if account local
 	if transaction.Sender.BankNumber == "" {
 		fmt.Println("   Processing sender...")
@@ -86,11 +90,7 @@ func updateAccounts(transaction PAINTrans) {
 		}
 		defer stmtUpdSender.Close() // Close the statement when we leave main() / the program terminates
 
-		fmt.Print("       ")
-		fmt.Println(transaction.Amount + transaction.Fee)
-		fmt.Print("       ")
-		fmt.Println(transaction.Sender.AccountNumber)
-		resUpd, err := stmtUpdSender.Exec(transaction.Amount+transaction.Fee, transaction.Amount+transaction.Fee, sqlTime, transaction.Sender.AccountNumber)
+		resUpd, err := stmtUpdSender.Exec(transaction.Amount+feeAmount, transaction.Amount+feeAmount, sqlTime, transaction.Sender.AccountNumber)
 		fmt.Println(resUpd)
 
 		if err != nil {
@@ -130,7 +130,7 @@ func updateAccounts(transaction PAINTrans) {
 	}
 	defer stmtUpdBank.Close() // Close the statement when we leave main() / the program terminates
 
-	_, err = stmtUpdBank.Exec(transaction.Amount*transaction.Fee, sqlTime)
+	_, err = stmtUpdBank.Exec(feeAmount, sqlTime)
 
 	if err != nil {
 		fmt.Println("Could not save results: " + err.Error())

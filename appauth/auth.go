@@ -57,7 +57,7 @@ func ProcessAppAuth(data []string) (result string) {
 }
 
 func CreateUserPassword(user string, password string) (result string) {
-	//TEST 0~appauth~2~181ac0ae-45cb-461d-b740-15ce33e4612f~testPassword
+	//TEST 0~appauth~3~181ac0ae-45cb-461d-b740-15ce33e4612f~testPassword
 	// Generate hash
 	hasher := sha512.New()
 	hasher.Write([]byte(password))
@@ -106,6 +106,7 @@ func CreateUserPassword(user string, password string) (result string) {
 		fmt.Println("Could not save account: " + err.Error())
 	}
 
+	// @FIXME This is not being returned
 	result = "1~Successfully created account"
 	return
 }
