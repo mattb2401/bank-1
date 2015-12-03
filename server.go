@@ -24,41 +24,74 @@ const (
 
 var Config configuration.Configuration
 
-func runServer() {
-	cert, err := tls.LoadX509KeyPair("certs/server.pem", "certs/server.key")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Load config and generate seed
-	config := tls.Config{Certificates: []tls.Certificate{cert}, ClientAuth: tls.RequireAnyClientCert}
-	config.Rand = rand.Reader
-
-	// Load app config
-	Config := configuration.LoadConfig()
-	// Set config in packages
-	accounts.SetConfig(&Config)
-	payments.SetConfig(&Config)
-	appauth.SetConfig(&Config)
-
-	// Listen for incoming connections.
-	l, err := tls.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT, &config)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Close the listener when the application closes.
-	defer l.Close()
-	fmt.Println("Listening on " + CONN_HOST + ":" + CONN_PORT)
-	for {
-		// Listen for an incoming connection.
-		conn, err := l.Accept()
+func runServer(mode string) {
+	switch mode {
+	case "tls":
+		cert, err := tls.LoadX509KeyPair("certs/server.pem", "certs/server.key")
 		if err != nil {
-			fmt.Println("Error accepting: ", err.Error())
+			log.Fatal(err)
+		}
+
+		// Load config and generate seed
+		config := tls.Config{Certificates: []tls.Certificate{cert}, ClientAuth: tls.RequireAnyClientCert}
+		config.Rand = rand.Reader
+
+		// Load app config
+		Config := configuration.LoadConfig()
+		// Set config in packages
+		accounts.SetConfig(&Config)
+		payments.SetConfig(&Config)
+		appauth.SetConfig(&Config)
+
+		// Listen for incoming connections.
+		l, err := tls.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT, &config)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Close the listener when the application closes.
+		defer l.Close()
+		fmt.Println("Listening on secure " + CONN_HOST + ":" + CONN_PORT)
+		for {
+			// Listen for an incoming connection.
+			conn, err := l.Accept()
+			if err != nil {
+				fmt.Println("Error accepting: ", err.Error())
+				os.Exit(1)
+			}
+			// Handle connections in a new goroutine.
+			go handleRequest(conn)
+		}
+		break
+	case "no-tls":
+		// Listen for incoming connections.
+		l, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
+		if err != nil {
+			fmt.Println("Error listening:", err.Error())
 			os.Exit(1)
 		}
-		// Handle connections in a new goroutine.
-		go handleRequest(conn)
+
+		// Load app config
+		Config := configuration.LoadConfig()
+		// Set config in packages
+		accounts.SetConfig(&Config)
+		payments.SetConfig(&Config)
+		appauth.SetConfig(&Config)
+
+		// Close the listener when the application closes.
+		defer l.Close()
+		fmt.Println("Listening on unsecure " + CONN_HOST + ":" + CONN_PORT)
+		for {
+			// Listen for an incoming connection.
+			conn, err := l.Accept()
+			if err != nil {
+				fmt.Println("Error accepting: ", err.Error())
+				os.Exit(1)
+			}
+			// Handle connections in a new goroutine.
+			go handleRequest(conn)
+		}
+		break
 	}
 }
 
