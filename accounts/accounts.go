@@ -159,7 +159,7 @@ func setAccountDetails(data []string) (accountDetails AccountDetails) {
 }
 
 func setAccountHolderDetails(data []string) (accountHolderDetails AccountHolderDetails) {
-	dob, err := strconv.ParseInt(data[4], 10, 64)
+	dob, err := strconv.ParseInt(data[5], 10, 64)
 	if err != nil {
 		fmt.Println("ERROR: Could not convert date")
 		return

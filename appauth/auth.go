@@ -49,7 +49,7 @@ func ProcessAppAuth(data []string) (result string) {
 		if len(data) < 5 {
 			result = "0~Not all required fields present"
 		}
-		CreateUserPassword(data[3], data[4])
+		result = CreateUserPassword(data[3], data[4])
 		break
 	}
 
