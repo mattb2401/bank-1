@@ -2,6 +2,9 @@ package payments
 
 import (
 	"fmt"
+	"github.com/ksred/bank/appauth"
+	"strconv"
+	"strings"
 )
 
 /*
@@ -19,6 +22,9 @@ Payments mandates:
 11 - MandateCancellationRequestV04
 12 - MandateAcceptanceReportV04
 
+#### Custom payments
+1000 - CustomerDepositInitiation (@FIXME Will need to implement this properly, for now we use it to demonstrate functionality)
+
 */
 
 type PAINTrans struct {
@@ -27,6 +33,33 @@ type PAINTrans struct {
 	Receiver AccountHolder
 	Amount   float64
 	Fee      float64
+}
+
+func painCreditTransferInitiation(painType int64, data []string) (result string) {
+	// Validate input
+	sender := parseAccountHolder(data[3])
+	receiver := parseAccountHolder(data[4])
+	trAmt := strings.TrimRight(data[5], "\x00")
+	transactionAmount, err := strconv.ParseFloat(trAmt, 64)
+	if err != nil {
+		fmt.Println("ERROR: Could not convert transaction amount to float64")
+		//log.Fatal(err)
+		return
+	}
+
+	// Check if sender valid
+	tokenUser := appauth.GetUserFromToken(data[0])
+	if tokenUser != sender.AccountNumber {
+		result = "0~Sender not valid"
+		return
+	}
+
+	transaction := PAINTrans{painType, sender, receiver, transactionAmount, TRANSACTION_FEE}
+
+	// Save transaction
+	result = processPAINTransaction(transaction)
+
+	return
 }
 
 func processPAINTransaction(transaction PAINTrans) (res string) {
@@ -49,4 +82,47 @@ func processPAINTransaction(transaction PAINTrans) (res string) {
 	res = "true"
 	return
 
+}
+
+func parseAccountHolder(account string) (accountHolder AccountHolder) {
+	accountStr := strings.Split(account, "@")
+
+	if len(accountStr) < 2 {
+		fmt.Println("ERROR: Could not parse account holders")
+		return
+	}
+
+	accountHolder = AccountHolder{accountStr[0], accountStr[1]}
+	return
+}
+
+func customerDepositInitiation(painType int64, data []string) (result string) {
+	// Validate input
+	// Sender is bank
+	sender := parseAccountHolder("0@0")
+	receiver := parseAccountHolder(data[3])
+	trAmt := strings.TrimRight(data[4], "\x00")
+	transactionAmount, err := strconv.ParseFloat(trAmt, 64)
+	if err != nil {
+		fmt.Println("ERROR: Could not convert transaction amount to float64")
+		//log.Fatal(err)
+		return
+	}
+
+	// Check if sender valid
+	tokenUser := appauth.GetUserFromToken(data[0])
+	if tokenUser != sender.AccountNumber {
+		result = "0~Sender not valid"
+		return
+	}
+
+	// Issue deposit
+	// @TODO This flow show be fixed. Maybe have banks approve deposits before initiation, or
+	// immediate approval below a certain amount subject to rate limiting
+	// @TODO Make sure fees are deducted off deposit amount
+	transaction := PAINTrans{painType, sender, receiver, transactionAmount, TRANSACTION_FEE}
+	// Save transaction
+	result = processPAINTransaction(transaction)
+
+	return
 }

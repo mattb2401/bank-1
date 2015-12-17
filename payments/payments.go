@@ -2,11 +2,9 @@ package payments
 
 import (
 	"fmt"
-	"github.com/ksred/bank/appauth"
 	"log"
 	"os"
 	"strconv"
-	"strings"
 )
 
 const TRANSACTION_FEE = 0.0001 // 0.01%
@@ -24,55 +22,43 @@ func CheckPayment() {
 	fmt.Println("Payment Check")
 }
 
-func ProcessPAIN(data []string) (res string) {
+func ProcessPAIN(data []string) (result string) {
 	fmt.Println("Validating PAIN ... ")
 
-	//There must be at least 6 elements
-	if len(data) < 6 {
+	//There must be at least 3 elements
+	if len(data) < 3 {
 		fmt.Println("ERROR: Not all data is present. Run pain~help to check for needed PAIN data")
 		os.Exit(1)
 	}
 
-	// Validate input
+	// Get type
 	painType, err := strconv.ParseInt(data[2], 10, 64)
 	if err != nil {
 		fmt.Println("Could not get type of PAIN transaction")
 		log.Fatal(err)
 		return
 	}
-	sender := parseAccountHolder(data[3])
-	receiver := parseAccountHolder(data[4])
-	trAmt := strings.TrimRight(data[5], "\x00")
-	transactionAmount, err := strconv.ParseFloat(trAmt, 64)
-	if err != nil {
-		fmt.Println("ERROR: Could not convert transaction amount to float64")
-		//log.Fatal(err)
-		return
+
+	switch painType {
+	case 1:
+		//There must be at least 6 elements
+		if len(data) < 6 {
+			fmt.Println("ERROR: Not all data is present. Run pain~help to check for needed PAIN data")
+			os.Exit(1)
+		}
+
+		result = painCreditTransferInitiation(painType, data)
+		break
+	case 1000:
+		//There must be at least 4 elements
+		//token~pain~type~amount
+		if len(data) < 4 {
+			fmt.Println("ERROR: Not all data is present. Run pain~help to check for needed PAIN data")
+			os.Exit(1)
+		}
+		result = customerDepositInitiation(painType, data)
+		break
 	}
 
-	// Check if sender valid
-	tokenUser := appauth.GetUserFromToken(data[0])
-	if tokenUser != sender.AccountNumber {
-		res = "0~Sender not valid"
-		return
-	}
-
-	transaction := PAINTrans{painType, sender, receiver, transactionAmount, TRANSACTION_FEE}
-
-	// Save transaction
-	res = processPAINTransaction(transaction)
-
-	return
-}
-
-func parseAccountHolder(account string) (accountHolder AccountHolder) {
-	accountStr := strings.Split(account, "@")
-
-	if len(accountStr) < 2 {
-		fmt.Println("ERROR: Could not parse account holders")
-		return
-	}
-
-	accountHolder = AccountHolder{accountStr[0], accountStr[1]}
 	return
 }
