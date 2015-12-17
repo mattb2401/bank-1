@@ -167,3 +167,39 @@ func getAccountMeta(id string) (accountDetails AccountHolderDetails) {
 
 	return
 }
+
+func getAllAccountDetails() (allAccounts []AccountDetails) {
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
+	if err != nil {
+		fmt.Println("Could not connect to database")
+		return
+	}
+
+	rows, err := db.Query("SELECT `accountNumber`, `bankNumber`, `accountHolderName` FROM `accounts`")
+	if err != nil {
+		fmt.Println("Error with select query: " + err.Error())
+	}
+	defer rows.Close()
+
+	count := 0
+	allAccounts = make([]AccountDetails, 0)
+
+	for rows.Next() {
+		accountDetailsSingle := AccountDetails{}
+		if err := rows.Scan(&accountDetailsSingle.AccountNumber, &accountDetailsSingle.BankNumber, &accountDetailsSingle.AccountHolderName); err != nil {
+			//@TODO Throw error
+			fmt.Println("ERROR: Could not retrieve account details")
+			return
+		}
+
+		allAccounts = append(allAccounts, accountDetailsSingle)
+		count++
+	}
+
+	if count == 0 {
+		fmt.Println("No accounts")
+		return
+	}
+
+	return
+}

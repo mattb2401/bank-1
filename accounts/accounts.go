@@ -1,6 +1,7 @@
 package accounts
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
@@ -39,6 +40,10 @@ Accounts (acmt) transactions are as follows:
 22 - IdentificationModificationAdviceV02
 23 - IdentificationVerificationRequestV02
 24 - IdentificationVerificationReportV02
+
+### Custom functionality
+1000 - ListAllAccounts (@FIXME Used for now by anyone, close down later)
+1001 - ListSingleAccount
 
 */
 
@@ -110,6 +115,9 @@ func ProcessAccount(data []string) (result string) {
 		*/
 		fmt.Println("Processing accountdata")
 		result = openAccount(data)
+		break
+	case 1000:
+		result = fetchAccounts(data)
 		break
 	default:
 		break
@@ -185,5 +193,21 @@ func setAccountHolderDetails(data []string) (accountHolderDetails AccountHolderD
 	accountHolderDetails.AddressLine3 = data[12]
 	accountHolderDetails.PostalCode = postalCode
 
+	return
+}
+
+func fetchAccounts(data []string) (result string) {
+	// Fetch all accounts. This fetches non-sensitive information (no balances)
+	accounts := getAllAccountDetails()
+
+	// Parse into nice result string
+	jsonAccounts, err := json.Marshal(accounts)
+	if err != nil {
+		fmt.Println("Error parsing results to json")
+		result = "0~Error parsing results to string"
+		return
+	}
+
+	result = "1~" + string(jsonAccounts)
 	return
 }
