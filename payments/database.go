@@ -63,15 +63,9 @@ func savePainTransaction(transaction PAINTrans) {
 }
 
 //func updateAccounts(sender AccountHolder, receiver AccountHolder, transactionAmount float64, transactionFee float64) {
-func updateAccounts(transaction PAINTrans) {
+func updateAccounts(transaction PAINTrans) (result string) {
 	t := time.Now()
 	sqlTime := int32(t.Unix())
-
-	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
-	if err != nil {
-		fmt.Println("Could not connect to database")
-		return
-	}
 
 	// Update sender account
 	fmt.Println("Processing transaction...")
@@ -80,44 +74,32 @@ func updateAccounts(transaction PAINTrans) {
 	// The feePerc is a percentage, convert to amount
 	feeAmount := transaction.Amount * transaction.Fee
 
-	// Only update if account local
-	if transaction.Sender.BankNumber == "" {
-		fmt.Println("   Processing sender...")
-		updateSenderStatement := "UPDATE accounts SET `accountBalance` = (`accountBalance` - ?), `availableBalance` = (`availableBalance` - ?), `timestamp` = ? WHERE `accountNumber` = ? "
-		stmtUpdSender, err := db.Prepare(updateSenderStatement)
-		if err != nil {
-			panic(err.Error()) // proper error handling instead of panic in your app
-		}
-		defer stmtUpdSender.Close() // Close the statement when we leave main() / the program terminates
-
-		resUpd, err := stmtUpdSender.Exec(transaction.Amount+feeAmount, transaction.Amount+feeAmount, sqlTime, transaction.Sender.AccountNumber)
-		fmt.Println(resUpd)
-
-		if err != nil {
-			fmt.Println("Could not save results: " + err.Error())
-		}
-	} else {
-		// Drop onto ledger
+	switch transaction.PainType {
+	// Payment
+	case 1:
+		result = processCreditInitiation(transaction, sqlTime, feeAmount)
+		break
+	// Deposit
+	case 1000:
+		result = processDepositInitiation(transaction, sqlTime, feeAmount)
+		break
 	}
 
-	// Update receiver account
-	// Only update if account local
-	if transaction.Receiver.BankNumber == "" {
-		fmt.Println("   Processing receiver...")
-		updateStatementReceiver := "UPDATE accounts SET `accountBalance` = (`accountBalance` + ?), `availableBalance` = (`availableBalance` + ?), `timestamp` = ? WHERE `accountNumber` = ? "
-		stmtUpdReceiver, err := db.Prepare(updateStatementReceiver)
-		if err != nil {
-			panic(err.Error()) // proper error handling instead of panic in your app
-		}
-		defer stmtUpdReceiver.Close() // Close the statement when we leave main() / the program terminates
+	resBankUpdate := updateBankHoldingAccount(feeAmount, sqlTime)
+	if !resBankUpdate {
+		result = "0~Could not update bank account"
+		return
+	}
 
-		_, err = stmtUpdReceiver.Exec(transaction.Amount, transaction.Amount, sqlTime, transaction.Receiver.AccountNumber)
+	return
 
-		if err != nil {
-			fmt.Println("Could not save results: " + err.Error())
-		}
-	} else {
-		// Drop onto ledger
+}
+
+func updateBankHoldingAccount(feeAmount float64, sqlTime int32) (result bool) {
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
+	if err != nil {
+		fmt.Println("Could not connect to database")
+		return
 	}
 
 	// Add fees to bank holding account
@@ -136,6 +118,7 @@ func updateAccounts(transaction PAINTrans) {
 		fmt.Println("Could not save results: " + err.Error())
 	}
 	defer db.Close()
+	return
 }
 
 // @TODO Look at using accounts.getAccountDetails here
@@ -166,5 +149,99 @@ func checkBalance(account AccountHolder) (balance float64) {
 		fmt.Println("ERROR: More than one account found with uuid")
 	}
 
+	return
+}
+
+func processCreditInitiation(transaction PAINTrans, sqlTime int32, feeAmount float64) (result string) {
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
+	if err != nil {
+		fmt.Println("Could not connect to database")
+		return
+	}
+
+	// Only update if account local
+	if transaction.Sender.BankNumber == "" {
+		fmt.Println("   Processing sender...")
+		updateSenderStatement := "UPDATE accounts SET `accountBalance` = (`accountBalance` - ?), `availableBalance` = (`availableBalance` - ?), `timestamp` = ? WHERE `accountNumber` = ? "
+		stmtUpdSender, err := db.Prepare(updateSenderStatement)
+		if err != nil {
+			//panic(err.Error()) // proper error handling instead of panic in your app
+			result = "0~Could not save payment"
+			return
+		}
+		defer stmtUpdSender.Close() // Close the statement when we leave main() / the program terminates
+
+		resUpd, err := stmtUpdSender.Exec(transaction.Amount+feeAmount, transaction.Amount+feeAmount, sqlTime, transaction.Sender.AccountNumber)
+		fmt.Println(resUpd)
+
+		if err != nil {
+			fmt.Println("Could not save results: " + err.Error())
+			result = "0~Could not process payment"
+			return
+		}
+
+		result = "1~Payment processed"
+	} else {
+		// Drop onto ledger
+	}
+
+	// Update receiver account
+	// Only update if account local
+	if transaction.Receiver.BankNumber == "" {
+		fmt.Println("   Processing receiver...")
+		updateStatementReceiver := "UPDATE accounts SET `accountBalance` = (`accountBalance` + ?), `availableBalance` = (`availableBalance` + ?), `timestamp` = ? WHERE `accountNumber` = ? "
+		stmtUpdReceiver, err := db.Prepare(updateStatementReceiver)
+		if err != nil {
+			panic(err.Error()) // proper error handling instead of panic in your app
+		}
+		defer stmtUpdReceiver.Close() // Close the statement when we leave main() / the program terminates
+
+		_, err = stmtUpdReceiver.Exec(transaction.Amount, transaction.Amount, sqlTime, transaction.Receiver.AccountNumber)
+
+		if err != nil {
+			fmt.Println("Could not save results: " + err.Error())
+		}
+	} else {
+		// Drop onto ledger
+	}
+	return
+}
+
+func processDepositInitiation(transaction PAINTrans, sqlTime int32, feeAmount float64) (result string) {
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
+	if err != nil {
+		fmt.Println("Could not connect to database")
+		return
+	}
+
+	// We don't update sender as it is deposit
+	// Update receiver account
+	// The total received amount is the deposited amount minus the fee
+	depositTransactionAmount := transaction.Amount - feeAmount
+	// Only update if account local
+	if transaction.Receiver.BankNumber == "" {
+		fmt.Println("   Processing receiver...")
+		updateStatementReceiver := "UPDATE accounts SET `accountBalance` = (`accountBalance` + ?), `availableBalance` = (`availableBalance` + ?), `timestamp` = ? WHERE `accountNumber` = ? "
+		stmtUpdReceiver, err := db.Prepare(updateStatementReceiver)
+		if err != nil {
+			//panic(err.Error()) // proper error handling instead of panic in your app
+			result = "0~Could not save deposit"
+			return
+		}
+		defer stmtUpdReceiver.Close() // Close the statement when we leave main() / the program terminates
+
+		_, err = stmtUpdReceiver.Exec(transaction.Amount, depositTransactionAmount, sqlTime, transaction.Receiver.AccountNumber)
+
+		if err != nil {
+			fmt.Println("Could not save results: " + err.Error())
+
+			result = "0~Deposit not successful"
+			return
+		}
+
+		result = "1~Successful deposit"
+	} else {
+		// Drop onto ledger
+	}
 	return
 }
