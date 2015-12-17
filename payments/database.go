@@ -230,7 +230,7 @@ func processDepositInitiation(transaction PAINTrans, sqlTime int32, feeAmount fl
 		}
 		defer stmtUpdReceiver.Close() // Close the statement when we leave main() / the program terminates
 
-		_, err = stmtUpdReceiver.Exec(transaction.Amount, depositTransactionAmount, sqlTime, transaction.Receiver.AccountNumber)
+		_, err = stmtUpdReceiver.Exec(depositTransactionAmount, depositTransactionAmount, sqlTime, transaction.Receiver.AccountNumber)
 
 		if err != nil {
 			fmt.Println("Could not save results: " + err.Error())

@@ -94,6 +94,7 @@ func ProcessPAIN(data []string) (result string) {
 }
 
 func painCreditTransferInitiation(painType int64, data []string) (result string) {
+
 	// Validate input
 	sender := parseAccountHolder(data[3])
 	receiver := parseAccountHolder(data[4])
@@ -114,6 +115,14 @@ func painCreditTransferInitiation(painType int64, data []string) (result string)
 
 	transaction := PAINTrans{painType, sender, receiver, transactionAmount, TRANSACTION_FEE}
 
+	// Checks for transaction (avail balance, accounts open, etc)
+	balanceAvailable := checkBalance(transaction.Sender)
+	if balanceAvailable < transaction.Amount {
+		fmt.Println("ERROR: Insufficient funds available")
+		result = "0~Insufficient funds"
+		return
+	}
+
 	// Save transaction
 	result = processPAINTransaction(transaction)
 
@@ -122,14 +131,6 @@ func painCreditTransferInitiation(painType int64, data []string) (result string)
 
 func processPAINTransaction(transaction PAINTrans) (res string) {
 	fmt.Printf("Process transaction %v", transaction)
-
-	// Checks for transaction (avail balance, accounts open, etc)
-	balanceAvailable := checkBalance(transaction.Sender)
-	if balanceAvailable < transaction.Amount {
-		fmt.Println("ERROR: Insufficient funds available")
-		res = "0~Insufficient funds"
-		return
-	}
 	// Test: pain~1~1b2ca241-0373-4610-abad-da7b06c50a7b@~181ac0ae-45cb-461d-b740-15ce33e4612f@~20
 	// Save in transaction table
 	savePainTransaction(transaction)
@@ -169,7 +170,7 @@ func customerDepositInitiation(painType int64, data []string) (result string) {
 
 	// Check if sender valid
 	tokenUser := appauth.GetUserFromToken(data[0])
-	if tokenUser != sender.AccountNumber {
+	if tokenUser != receiver.AccountNumber {
 		result = "0~Sender not valid"
 		return
 	}
@@ -177,7 +178,6 @@ func customerDepositInitiation(painType int64, data []string) (result string) {
 	// Issue deposit
 	// @TODO This flow show be fixed. Maybe have banks approve deposits before initiation, or
 	// immediate approval below a certain amount subject to rate limiting
-	// @TODO Make sure fees are deducted off deposit amount
 	transaction := PAINTrans{painType, sender, receiver, transactionAmount, TRANSACTION_FEE}
 	// Save transaction
 	result = processPAINTransaction(transaction)
