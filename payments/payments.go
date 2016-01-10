@@ -82,7 +82,7 @@ func ProcessPAIN(data []string) (result string) {
 	case 1000:
 		//There must be at least 4 elements
 		//token~pain~type~amount
-		if len(data) < 4 {
+		if len(data) < 5 {
 			fmt.Println("ERROR: Not all data is present. Run pain~help to check for needed PAIN data")
 			os.Exit(1)
 		}
