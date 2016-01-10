@@ -3,6 +3,7 @@ package accounts
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ksred/bank/appauth"
 	"log"
 	"strconv"
 	"strings"
@@ -119,6 +120,9 @@ func ProcessAccount(data []string) (result string) {
 	case 1000:
 		result = fetchAccounts(data)
 		break
+	case 1001:
+		result = fetchSingleAccount(data)
+		break
 	default:
 		break
 	}
@@ -209,5 +213,22 @@ func fetchAccounts(data []string) (result string) {
 	}
 
 	result = "1~" + string(jsonAccounts)
+	return
+}
+
+func fetchSingleAccount(data []string) (result string) {
+	// Fetch user account. Must be user logged in
+	tokenUser := appauth.GetUserFromToken(data[0])
+	account := getSingleAccountDetail(tokenUser)
+
+	// Parse into nice result string
+	jsonAccount, err := json.Marshal(account)
+	if err != nil {
+		fmt.Println("Error parsing results to json")
+		result = "0~Error parsing results to string"
+		return
+	}
+
+	result = "1~" + string(jsonAccount)
 	return
 }

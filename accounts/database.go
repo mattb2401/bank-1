@@ -203,3 +203,35 @@ func getAllAccountDetails() (allAccounts []AccountDetails) {
 
 	return
 }
+
+func getSingleAccountDetail(accountNumber string) (account AccountDetails) {
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
+	if err != nil {
+		fmt.Println("Could not connect to database")
+		return
+	}
+
+	rows, err := db.Query("SELECT `accountNumber`, `bankNumber`, `accountHolderName`, `accountBalance`, `overdraft`, `availableBalance` FROM `accounts` WHERE `accountNumber` = ?", accountNumber)
+	if err != nil {
+		fmt.Println("Error with select query: " + err.Error())
+	}
+	defer rows.Close()
+
+	count := 0
+	for rows.Next() {
+		if err := rows.Scan(&account.AccountNumber, &account.BankNumber, &account.AccountHolderName, &account.AccountBalance, &account.Overdraft, &account.AvailableBalance); err != nil {
+			//@TODO Throw error
+			fmt.Println("ERROR: Could not retrieve account details")
+			return
+		}
+
+		count++
+	}
+
+	if count == 0 {
+		fmt.Println("No accounts")
+		return
+	}
+
+	return
+}
