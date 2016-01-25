@@ -45,6 +45,7 @@ Accounts (acmt) transactions are as follows:
 ### Custom functionality
 1000 - ListAllAccounts (@FIXME Used for now by anyone, close down later)
 1001 - ListSingleAccount
+1002 - CheckAccountByID
 
 */
 
@@ -122,6 +123,13 @@ func ProcessAccount(data []string) (result string) {
 		break
 	case 1001:
 		result = fetchSingleAccount(data)
+		break
+	case 1002:
+		if len(data) < 3 {
+			result = "0~Not all fields present"
+			return
+		}
+		result = fetchSingleAccountByID(data)
 		break
 	default:
 		break
@@ -230,5 +238,15 @@ func fetchSingleAccount(data []string) (result string) {
 	}
 
 	result = "1~" + string(jsonAccount)
+	return
+}
+
+func fetchSingleAccountByID(data []string) (result string) {
+	// Format: appauth~1002~USERID
+	userID := data[2]
+
+	userAccountNumber := getSingleAccountNumberByID(userID)
+
+	result = userAccountNumber
 	return
 }
