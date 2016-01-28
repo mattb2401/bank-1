@@ -250,6 +250,7 @@ func getSingleAccountNumberByID(userID string) (accountID string) {
 	defer rows.Close()
 
 	count := 0
+	// @TODO Right now this will return the latest account only, if there are two accounts
 	for rows.Next() {
 		if err := rows.Scan(&accountID); err != nil {
 			//@TODO Throw error
