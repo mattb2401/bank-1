@@ -235,3 +235,36 @@ func getSingleAccountDetail(accountNumber string) (account AccountDetails) {
 
 	return
 }
+
+func getSingleAccountNumberByID(userID string) (accountID string) {
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
+	if err != nil {
+		fmt.Println("Could not connect to database")
+		return
+	}
+
+	rows, err := db.Query("SELECT `accountNumber` FROM `accounts_meta` WHERE `accountHolderIdentificationNumber` = ?", userID)
+	if err != nil {
+		fmt.Println("Error with select query: " + err.Error())
+	}
+	defer rows.Close()
+
+	count := 0
+	// @TODO Right now this will return the latest account only, if there are two accounts
+	for rows.Next() {
+		if err := rows.Scan(&accountID); err != nil {
+			//@TODO Throw error
+			fmt.Println("ERROR: Could not retrieve account details")
+			return
+		}
+
+		count++
+	}
+
+	if count == 0 {
+		fmt.Println("No accounts")
+		return
+	}
+
+	return
+}
