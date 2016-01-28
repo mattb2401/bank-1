@@ -17,8 +17,8 @@ import (
 
 const (
 	// This is the FQDN from the certs generated
-	CONN_HOST = "bank.ksred.me"
-	CONN_PORT = "6600"
+	CONN_HOST = "thebankoftoday.com"
+	CONN_PORT = "3300"
 	CONN_TYPE = "tcp"
 )
 

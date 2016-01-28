@@ -13,6 +13,7 @@ func runClient(mode string) {
 
 	fmt.Println("Go Banking Client\nWelcome\n")
 	// We create a loop which waits for inut on std io
+	fmt.Println("Running on " + CONN_HOST + ":" + CONN_PORT)
 	for {
 		reader := bufio.NewReader(os.Stdin)
 		text, _ := reader.ReadString('\n')
