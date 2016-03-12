@@ -1,16 +1,11 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"log"
 	"os"
 )
-
-type bankError struct {
-	Error   error
-	Message string
-	Code    int
-}
 
 const (
 	// This is the FQDN from the certs generated
@@ -29,13 +24,13 @@ func main() {
 
 	err := parseFlags(flagParsed)
 	if err != nil {
-		log.Fatalf("Error starting: %s, code: %v, err: %v\n", err.Message, err.Code, err.Error)
+		log.Fatalf("Error starting, err: %v\n", err)
 		os.Exit(1)
 	}
 	os.Exit(0)
 }
 
-func parseFlags(flagParsed string) (err *bankError) {
+func parseFlags(flagParsed string) (err error) {
 	switch flagParsed {
 	case "client":
 		// Run client for bank system
@@ -56,7 +51,7 @@ func parseFlags(flagParsed string) (err *bankError) {
 			runServer("no-tls")
 		}
 	default:
-		return &bankError{nil, "No valid option chosen. Valid options: client, clientNoTLS, server, serverNoTLS", 404}
+		return errors.New("No valid option chosen. Valid options: client, clientNoTLS, server, serverNoTLS")
 	}
 
 	return

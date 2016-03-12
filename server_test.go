@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"net"
+	"testing"
+)
 
 func TestRunTLSServer(t *testing.T) {
 	//@TODO Figure out how to exit this when successful
@@ -27,17 +30,16 @@ func TestRunTLSServer(t *testing.T) {
 //@TODO Implement TCP (no TLS) when exit if successful implemented
 
 func TestHandleRequest(t *testing.T) {
-	/*
-		l, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
+	l, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
 
-		if err != nil {
-			t.Errorf("HandleRequest does not pass. Does not Listen. Looking for %v, got %v", nil, err)
-		}
-		conn, err := l.Accept()
-		bankErr := handleRequest(conn)
-		l.Close()
-		if bankErr != nil {
-			t.Errorf("HandleRequest does not pass. Looking for %v, got %v", nil, bankErr)
-		}
-	*/
+	if err != nil {
+		t.Errorf("HandleRequest does not pass. Does not Listen. Looking for %v, got %v", nil, err)
+	}
+	conn, err := l.Accept()
+	bankErr := handleRequest(conn)
+	l.Close()
+	if bankErr != nil {
+		t.Errorf("HandleRequest does not pass. Looking for %v, got %v", nil, bankErr)
+	}
+
 }

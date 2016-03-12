@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -62,12 +63,6 @@ Accounts (acmt) transactions are as follows:
    AccountHolderAddressLine3~
    AccountHolderPostalCode
 */
-type bankError struct {
-	Error   error
-	Message string
-	Code    int
-}
-
 type AccountHolder struct {
 	AccountNumber string
 	BankNumber    string
@@ -106,14 +101,14 @@ const (
 	OPENING_OVERDRAFT = 0.
 )
 
-func ProcessAccount(data []string) (result string, bankErr *bankError) {
+func ProcessAccount(data []string) (result string, err error) {
 	if len(data) < 3 {
-		return "", &bankError{nil, "Data string does not have enough fields", 500}
+		return "", errors.New("accounts.ProcessAccount: Not enough fields, minimum 3")
 	}
 
 	acmtType, err := strconv.ParseInt(data[2], 10, 64)
 	if err != nil {
-		return "", &bankError{err, "Could not get type of ACMT transaction", 500}
+		return "", errors.New("accounts.ProcessAccount: Could not get ACMT type")
 	}
 
 	// Switch on the acmt type
@@ -123,8 +118,7 @@ func ProcessAccount(data []string) (result string, bankErr *bankError) {
 		   @TODO
 		   The differences between AccountOpeningInstructionV05 and AccountOpeningRequestV02 will be explored in detail, for now we treat the same - open an account
 		*/
-		fmt.Println("Processing accountdata")
-		result = openAccount(data)
+		result, err = openAccount(data)
 		break
 	case 1000:
 		result = fetchAccounts(data)
@@ -134,24 +128,25 @@ func ProcessAccount(data []string) (result string, bankErr *bankError) {
 		break
 	case 1002:
 		if len(data) < 3 {
-			result = "0~Not all fields present"
+			err = errors.New("accounts.ProcessAccount: Not all fields present")
 			return
 		}
 		result = fetchSingleAccountByID(data)
 		break
 	default:
-		bankErr = &bankError{err, "ACMT transaction code invalid", 500}
+		err = errors.New("accounts.ProcessAccount: ACMT transaction code invalid")
 		break
 	}
 
 	return
 }
 
-func openAccount(data []string) (result string) {
+func openAccount(data []string) (result string, err error) {
 	// Validate string against required info/length
 	if len(data) < 14 {
-		fmt.Println("ERROR: Not all fields present for account creation")
-		result = "ERROR: acmt transactions must be as follows:acmt~AcmtType~AccountHolderGivenName~AccountHolderFamilyName~AccountHolderDateOfBirth~AccountHolderIdentificationNumber~AccountHolderContactNumber1~AccountHolderContactNumber2~AccountHolderEmailAddress~AccountHolderAddressLine1~AccountHolderAddressLine2~AccountHolderAddressLine3~AccountHolderPostalCode"
+		err = errors.New("accounts.openAccount: Not all fields present")
+		//@TODO Add to documentation rather than returning here
+		//result = "ERROR: acmt transactions must be as follows:acmt~AcmtType~AccountHolderGivenName~AccountHolderFamilyName~AccountHolderDateOfBirth~AccountHolderIdentificationNumber~AccountHolderContactNumber1~AccountHolderContactNumber2~AccountHolderEmailAddress~AccountHolderAddressLine1~AccountHolderAddressLine2~AccountHolderAddressLine3~AccountHolderPostalCode"
 		return
 	}
 
@@ -160,15 +155,21 @@ func openAccount(data []string) (result string) {
 	accountHolder := getAccountMeta(data[6])
 	fmt.Println(accountHolder)
 	if accountHolder.AccountNumber != "" {
-		return "1~" + accountHolder.AccountNumber + "~Account already open."
+		return "", errors.New("accounts.openAccount" + accountHolder.AccountNumber + "~Account already open")
 	}
 
-	// Remove new line from data
+	// @FIXME: Remove new line from data
 	data[len(data)-1] = strings.Replace(data[len(data)-1], "\n", "", -1)
 
 	// Create account
-	accountHolderObject := setAccountDetails(data)
-	accountHolderDetailsObject := setAccountHolderDetails(data)
+	accountHolderObject, err := setAccountDetails(data)
+	if err != nil {
+		return "", err
+	}
+	accountHolderDetailsObject, err := setAccountHolderDetails(data)
+	if err != nil {
+		return "", err
+	}
 	createdAccountHolder := createAccount(accountHolderObject, accountHolderDetailsObject)
 
 	fmt.Println(createdAccountHolder)
@@ -176,8 +177,13 @@ func openAccount(data []string) (result string) {
 	return
 }
 
-func setAccountDetails(data []string) (accountDetails AccountDetails) {
-	// @TODO Integrity checks
+func setAccountDetails(data []string) (accountDetails AccountDetails, err error) {
+	if data[4] == "" {
+		return AccountDetails{}, errors.New("accounts.SetAccountDetails: Family name cannot be empty")
+	}
+	if data[3] == "" {
+		return AccountDetails{}, errors.New("accounts.SetAccountDetails: Family name cannot be empty")
+	}
 	accountDetails.BankNumber = BANK_NUMBER
 	accountDetails.AccountHolderName = data[4] + "," + data[3] // Family Name, Given Name
 	accountDetails.AccountBalance = OPENING_BALANCE
@@ -187,17 +193,22 @@ func setAccountDetails(data []string) (accountDetails AccountDetails) {
 	return
 }
 
-func setAccountHolderDetails(data []string) (accountHolderDetails AccountHolderDetails) {
+func setAccountHolderDetails(data []string) (accountHolderDetails AccountHolderDetails, err error) {
 	dob, err := strconv.ParseInt(data[5], 10, 64)
 	if err != nil {
-		fmt.Println("ERROR: Could not convert date")
-		return
+		return AccountHolderDetails{}, err
 	}
 
 	postalCode, err := strconv.ParseInt(data[13], 10, 64)
 	if err != nil {
-		fmt.Println("ERROR: Could not convert postal code")
-		return
+		return AccountHolderDetails{}, err
+	}
+
+	if data[4] == "" {
+		return AccountHolderDetails{}, errors.New("accounts.setAccountHolderDetails: Family name cannot be empty")
+	}
+	if data[3] == "" {
+		return AccountHolderDetails{}, errors.New("accounts.setAccountHolderDetails: Family name cannot be empty")
 	}
 
 	// @TODO Integrity checks

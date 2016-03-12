@@ -16,29 +16,29 @@ import (
 
 var Config configuration.Configuration
 
-func runServer(mode string) (message string, err *bankError) {
+func runServer(mode string) (message string, err error) {
+
+	// Load app config
+	Config := configuration.LoadConfig()
+	// Set config in packages
+	accounts.SetConfig(&Config)
+	payments.SetConfig(&Config)
+	appauth.SetConfig(&Config)
 	switch mode {
 	case "tls":
 		cert, err := tls.LoadX509KeyPair("certs/server.pem", "certs/server.key")
 		if err != nil {
-			return "", &bankError{err, "Could not start TLS server. Crypto error.", 500}
+			return "", err
 		}
 
 		// Load config and generate seed
 		config := tls.Config{Certificates: []tls.Certificate{cert}, ClientAuth: tls.RequireAnyClientCert}
 		config.Rand = rand.Reader
 
-		// Load app config
-		Config := configuration.LoadConfig()
-		// Set config in packages
-		accounts.SetConfig(&Config)
-		payments.SetConfig(&Config)
-		appauth.SetConfig(&Config)
-
 		// Listen for incoming connections.
 		l, err := tls.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT, &config)
 		if err != nil {
-			return "", &bankError{err, "Could not start listen on TLS server.", 500}
+			return "", err
 		}
 
 		// Close the listener when the application closes.
@@ -48,7 +48,7 @@ func runServer(mode string) (message string, err *bankError) {
 			// Listen for an incoming connection.
 			conn, err := l.Accept()
 			if err != nil {
-				return "", &bankError{err, "Could not accept incoming on TLS.", 500}
+				return "", err
 			}
 			// Handle connections in a new goroutine.
 			go handleRequest(conn)
@@ -57,15 +57,8 @@ func runServer(mode string) (message string, err *bankError) {
 		// Listen for incoming connections.
 		l, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
 		if err != nil {
-			return "", &bankError{err, "Could not start listen on TCP server.", 500}
+			return "", err
 		}
-
-		// Load app config
-		Config := configuration.LoadConfig()
-		// Set config in packages
-		accounts.SetConfig(&Config)
-		payments.SetConfig(&Config)
-		appauth.SetConfig(&Config)
 
 		// Close the listener when the application closes.
 		defer l.Close()
@@ -74,7 +67,7 @@ func runServer(mode string) (message string, err *bankError) {
 			// Listen for an incoming connection.
 			conn, err := l.Accept()
 			if err != nil {
-				return "", &bankError{err, "Could not accept incoming on TCP.", 500}
+				return "", err
 			}
 			// Handle connections in a new goroutine.
 			go handleRequest(conn)
@@ -85,19 +78,18 @@ func runServer(mode string) (message string, err *bankError) {
 }
 
 // Handles incoming requests.
-func handleRequest(conn net.Conn) (bankErr *bankError) {
+func handleRequest(conn net.Conn) (err error) {
 	// Make a buffer to hold incoming data.
 	buf := make([]byte, 1024)
 	// Read the incoming connection into the buffer.
-	_, err := conn.Read(buf)
+	_, err = conn.Read(buf)
 	if err != nil {
-		fmt.Println("Error reading:", err.Error())
-		return &bankError{err, "Could not read request", 500}
+		return err
 	}
 	s := string(buf[:])
 
 	// Process
-	result := processCommand(s)
+	result, err := processCommand(s)
 
 	// Send a response back to person contacting us.
 	conn.Write([]byte(result + "\n"))
@@ -107,7 +99,7 @@ func handleRequest(conn net.Conn) (bankErr *bankError) {
 	return
 }
 
-func processCommand(text string) (result string) {
+func processCommand(text string) (result string, err error) {
 	// Commands are received split by tilde (~)
 	// command~DATA
 	cleanText := strings.Replace(text, "\n", "", -1)
@@ -156,7 +148,7 @@ func processCommand(text string) (result string) {
 			fmt.Println("") // @TODO Help section
 			return
 		}
-		result = accounts.ProcessAccount(command)
+		result, err = accounts.ProcessAccount(command)
 	case "remt":
 	case "reda":
 	case "pacs":

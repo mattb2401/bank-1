@@ -32,20 +32,20 @@ func runClient(mode string) {
 	}
 }
 
-func sendToServer(text string, mode string) (message string, err *bankError) {
+func sendToServer(text string, mode string) (message string, err error) {
 	switch mode {
 	case "tls":
 		// Connect to this socket
 		cert, err := tls.LoadX509KeyPair("certs/client.pem", "certs/client.key")
 		if err != nil {
-			return "", &bankError{err, "Could not start TLS server. Crypto error.", 500}
+			return "", err
 		}
 
 		config := tls.Config{Certificates: []tls.Certificate{cert}, InsecureSkipVerify: true}
 		conn, err := tls.Dial(CONN_TYPE, CONN_HOST+":"+CONN_PORT, &config)
 
 		if err != nil {
-			return "", &bankError{err, "Could not connect to TLS server", 500}
+			return "", err
 		}
 
 		// Send to socket
@@ -54,14 +54,14 @@ func sendToServer(text string, mode string) (message string, err *bankError) {
 		// Listen for reply
 		message, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
-			return "", &bankError{err, "Could not receive reply", 500}
+			return "", err
 		}
 		return message, nil
 	case "no-tls":
 		// Connect to this socket
 		conn, err := net.Dial(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
 		if err != nil {
-			return "", &bankError{err, "Could not connect to TCP server", 500}
+			return "", err
 		}
 
 		// Send to socket
@@ -70,7 +70,7 @@ func sendToServer(text string, mode string) (message string, err *bankError) {
 		// Listen for reply
 		message, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
-			return "", &bankError{err, "Could not receive reply", 500}
+			return "", err
 		}
 		return message, nil
 	}
