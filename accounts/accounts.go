@@ -3,10 +3,10 @@ package accounts
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ksred/bank/appauth"
-	"log"
 	"strconv"
 	"strings"
+
+	"github.com/ksred/bank/appauth"
 )
 
 /*
@@ -62,6 +62,12 @@ Accounts (acmt) transactions are as follows:
    AccountHolderAddressLine3~
    AccountHolderPostalCode
 */
+type bankError struct {
+	Error   error
+	Message string
+	Code    int
+}
+
 type AccountHolder struct {
 	AccountNumber string
 	BankNumber    string
@@ -100,12 +106,14 @@ const (
 	OPENING_OVERDRAFT = 0.
 )
 
-func ProcessAccount(data []string) (result string) {
+func ProcessAccount(data []string) (result string, bankErr *bankError) {
+	if len(data) < 3 {
+		return "", &bankError{nil, "Data string does not have enough fields", 500}
+	}
+
 	acmtType, err := strconv.ParseInt(data[2], 10, 64)
 	if err != nil {
-		fmt.Println("Could not get type of ACMT transaction")
-		log.Fatal(err)
-		return
+		return "", &bankError{err, "Could not get type of ACMT transaction", 500}
 	}
 
 	// Switch on the acmt type
@@ -132,6 +140,7 @@ func ProcessAccount(data []string) (result string) {
 		result = fetchSingleAccountByID(data)
 		break
 	default:
+		bankErr = &bankError{err, "ACMT transaction code invalid", 500}
 		break
 	}
 

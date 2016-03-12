@@ -5,31 +5,23 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"fmt"
+	"net"
+	"strings"
+
 	"github.com/ksred/bank/accounts"
 	"github.com/ksred/bank/appauth"
 	"github.com/ksred/bank/configuration"
 	"github.com/ksred/bank/payments"
-	"log"
-	"net"
-	"os"
-	"strings"
-)
-
-const (
-	// This is the FQDN from the certs generated
-	CONN_HOST = "thebankoftoday.com"
-	CONN_PORT = "3300"
-	CONN_TYPE = "tcp"
 )
 
 var Config configuration.Configuration
 
-func runServer(mode string) {
+func runServer(mode string) (message string, err *bankError) {
 	switch mode {
 	case "tls":
 		cert, err := tls.LoadX509KeyPair("certs/server.pem", "certs/server.key")
 		if err != nil {
-			log.Fatal(err)
+			return "", &bankError{err, "Could not start TLS server. Crypto error.", 500}
 		}
 
 		// Load config and generate seed
@@ -46,7 +38,7 @@ func runServer(mode string) {
 		// Listen for incoming connections.
 		l, err := tls.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT, &config)
 		if err != nil {
-			log.Fatal(err)
+			return "", &bankError{err, "Could not start listen on TLS server.", 500}
 		}
 
 		// Close the listener when the application closes.
@@ -56,19 +48,16 @@ func runServer(mode string) {
 			// Listen for an incoming connection.
 			conn, err := l.Accept()
 			if err != nil {
-				fmt.Println("Error accepting: ", err.Error())
-				os.Exit(1)
+				return "", &bankError{err, "Could not accept incoming on TLS.", 500}
 			}
 			// Handle connections in a new goroutine.
 			go handleRequest(conn)
 		}
-		break
 	case "no-tls":
 		// Listen for incoming connections.
 		l, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
 		if err != nil {
-			fmt.Println("Error listening:", err.Error())
-			os.Exit(1)
+			return "", &bankError{err, "Could not start listen on TCP server.", 500}
 		}
 
 		// Load app config
@@ -85,24 +74,25 @@ func runServer(mode string) {
 			// Listen for an incoming connection.
 			conn, err := l.Accept()
 			if err != nil {
-				fmt.Println("Error accepting: ", err.Error())
-				os.Exit(1)
+				return "", &bankError{err, "Could not accept incoming on TCP.", 500}
 			}
 			// Handle connections in a new goroutine.
 			go handleRequest(conn)
 		}
-		break
 	}
+
+	return
 }
 
 // Handles incoming requests.
-func handleRequest(conn net.Conn) {
+func handleRequest(conn net.Conn) (bankErr *bankError) {
 	// Make a buffer to hold incoming data.
 	buf := make([]byte, 1024)
 	// Read the incoming connection into the buffer.
 	_, err := conn.Read(buf)
 	if err != nil {
 		fmt.Println("Error reading:", err.Error())
+		return &bankError{err, "Could not read request", 500}
 	}
 	s := string(buf[:])
 
@@ -114,6 +104,7 @@ func handleRequest(conn net.Conn) {
 	// Close the connection when you're done with it.
 	conn.Close()
 
+	return
 }
 
 func processCommand(text string) (result string) {

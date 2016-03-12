@@ -2,15 +2,24 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log"
 	"os"
 )
 
-func main() {
-	parseFlags()
+type bankError struct {
+	Error   error
+	Message string
+	Code    int
 }
 
-func parseFlags() {
+const (
+	// This is the FQDN from the certs generated
+	CONN_HOST = "localhost"
+	CONN_PORT = "3300"
+	CONN_TYPE = "tcp"
+)
+
+func main() {
 	modeFlag := flag.String("mode", "", "Test to run")
 
 	flag.Parse()
@@ -18,32 +27,37 @@ func parseFlags() {
 	// Dereference
 	flagParsed := *modeFlag
 
+	err := parseFlags(flagParsed)
+	if err != nil {
+		log.Fatalf("Error starting: %s, code: %v, err: %v\n", err.Message, err.Code, err.Error)
+		os.Exit(1)
+	}
+	os.Exit(0)
+}
+
+func parseFlags(flagParsed string) (err *bankError) {
 	switch flagParsed {
 	case "client":
 		// Run client for bank system
 		runClient("tls")
-		os.Exit(0)
 		break
 	case "clientNoTLS":
 		// Run client for bank system
 		runClient("no-tls")
-		os.Exit(0)
 		break
 	case "server":
 		// Run server for bank system
 		for {
 			runServer("tls")
 		}
-		break
 	case "serverNoTLS":
 		// Run server for bank system
 		for {
 			runServer("no-tls")
 		}
-		break
 	default:
-		fmt.Println("No valid option chosen")
-		os.Exit(1)
-		break
+		return &bankError{nil, "No valid option chosen. Valid options: client, clientNoTLS, server, serverNoTLS", 404}
 	}
+
+	return
 }
