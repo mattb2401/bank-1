@@ -7,10 +7,11 @@ package accounts
 import (
 	"database/sql"
 	"fmt"
+	"time"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/ksred/bank/configuration"
 	"github.com/satori/go.uuid"
-	"time"
 )
 
 var Config configuration.Configuration
@@ -19,10 +20,9 @@ func SetConfig(config *configuration.Configuration) {
 	Config = *config
 }
 
-func loadDatabase() (db *sql.DB) {
-	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
+func loadDatabase() (db *sql.DB, err error) {
+	db, err = sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		fmt.Println("Could not connect to database")
 		return
 	}
 	defer db.Close()
@@ -30,50 +30,68 @@ func loadDatabase() (db *sql.DB) {
 	// Test connection with ping
 	err = db.Ping()
 	if err != nil {
-		fmt.Println("Ping error: " + err.Error()) // proper error handling instead of panic in your app
 		return
 	}
 
 	return
 }
 
-func createAccount(accountDetails AccountDetails, accountHolderDetails AccountHolderDetails) (newAccountDetails AccountDetails) {
-	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
+func createAccount(accountDetails AccountDetails, accountHolderDetails AccountHolderDetails) (AccountDetails AccountDetails, err error) {
+	// Convert variables
+	t := time.Now()
+	sqlTime := int32(t.Unix())
+
+	err = doCreateAccount(sqlTime, &accountDetails)
 	if err != nil {
-		fmt.Println("Could not connect to database")
 		return
 	}
 
-	// Prepare statement for inserting data
+	err = doCreateAccountMeta(sqlTime, &accountHolderDetails, &accountDetails)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func doCreateAccount(sqlTime int32, accountDetails *AccountDetails) (err error) {
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
+	if err != nil {
+		return
+	}
 	// Create account
 	insertStatement := "INSERT INTO accounts (`accountNumber`, `bankNumber`, `accountHolderName`, `accountBalance`, `overdraft`, `availableBalance`, `timestamp`) "
 	insertStatement += "VALUES(?, ?, ?, ?, ?, ?, ?)"
 	stmtIns, err := db.Prepare(insertStatement)
 	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
+		return
 	}
-	defer stmtIns.Close() // Close the statement when we leave main() / the program terminates
 
-	// Convert variables
-	t := time.Now()
-	sqlTime := int32(t.Unix())
+	// Prepare statement for inserting data
+	defer stmtIns.Close() // Close the statement when we leave main() / the program terminates
 
 	// Generate account number
 	newUuid := uuid.NewV4()
 	accountDetails.AccountNumber = newUuid.String()
 
 	_, err = stmtIns.Exec(accountDetails.AccountNumber, accountDetails.BankNumber, accountDetails.AccountHolderName, accountDetails.AccountBalance, accountDetails.Overdraft, accountDetails.AvailableBalance, sqlTime)
-
 	if err != nil {
-		fmt.Println("Could not save results: " + err.Error())
+		return
 	}
+	return
+}
 
-	// Create account meta
-	insertStatement = "INSERT INTO accounts_meta (`accountNumber`, `bankNumber`, `accountHolderGivenName`, `accountHolderFamilyName`, `accountHolderDateOfBirth`, `accountHolderIdentificationNumber`, `accountHolderContactNumber1`, `accountHolderContactNumber2`, `accountHolderEmailAddress`, `accountHolderAddressLine1`, `accountHolderAddressLine2`, `accountHolderAddressLine3`, `accountHolderPostalCode`, `timestamp`) "
-	insertStatement += "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-	stmtIns, err = db.Prepare(insertStatement)
+func doCreateAccountMeta(sqlTime int32, accountHolderDetails *AccountHolderDetails, accountDetails *AccountDetails) (err error) {
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
+		return
+	}
+	// Create account meta
+	insertStatement := "INSERT INTO accounts_meta (`accountNumber`, `bankNumber`, `accountHolderGivenName`, `accountHolderFamilyName`, `accountHolderDateOfBirth`, `accountHolderIdentificationNumber`, `accountHolderContactNumber1`, `accountHolderContactNumber2`, `accountHolderEmailAddress`, `accountHolderAddressLine1`, `accountHolderAddressLine2`, `accountHolderAddressLine3`, `accountHolderPostalCode`, `timestamp`) "
+	insertStatement += "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	stmtIns, err := db.Prepare(insertStatement)
+	if err != nil {
+		return
 	}
 	defer stmtIns.Close() // Close the statement when we leave main() / the program terminates
 
@@ -83,12 +101,10 @@ func createAccount(accountDetails AccountDetails, accountHolderDetails AccountHo
 		accountHolderDetails.PostalCode, sqlTime)
 
 	if err != nil {
-		fmt.Println("Could not save results: " + err.Error())
+		return
 	}
 
 	defer db.Close()
-
-	newAccountDetails = accountDetails
 
 	return
 }

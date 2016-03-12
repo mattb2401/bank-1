@@ -170,7 +170,10 @@ func openAccount(data []string) (result string, err error) {
 	if err != nil {
 		return "", err
 	}
-	createdAccountHolder := createAccount(accountHolderObject, accountHolderDetailsObject)
+	createdAccountHolder, err := createAccount(accountHolderObject, accountHolderDetailsObject)
+	if err != nil {
+		return "", err
+	}
 
 	fmt.Println(createdAccountHolder)
 	result = createdAccountHolder.AccountNumber
