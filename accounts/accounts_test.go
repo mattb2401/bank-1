@@ -75,3 +75,72 @@ func TestSetAccountDetails(t *testing.T) {
 		t.Errorf("SetAccountDetails does not pass. DETAILS. Looking for %v, got %v", "Doe,John", accountDetails.AccountHolderName)
 	}
 }
+
+func TestSetAccountHolderDetailsFailure(t *testing.T) {
+	tst := []string{"", "", "", "John", "Doe"}
+	_, err := setAccountHolderDetails(tst)
+	if err == nil {
+		t.Errorf("etAccountHolderDetailsFailure does not pass. Should fail. Looking for %v, got %v", "Not all field values present", nil)
+	}
+}
+
+func TestSetAccountHolderDetails(t *testing.T) {
+	tst := []string{"", "", "", "John", "Doe", "01011900", "010119001234123", "111", "222", "user@domain.com", "address 1", "address 2", "address 3", "2000"}
+	accountHolderDetails, err := setAccountHolderDetails(tst)
+
+	if err != nil {
+		t.Errorf("SetAccountHolderDetails does not pass.  Looking for %v, got %v", nil, err)
+	}
+
+	if reflect.TypeOf(accountHolderDetails).String() != "accounts.AccountHolderDetails" {
+		t.Errorf("SetAccountHolderDetails does not pass. TYPE. Looking for %v, got %v", "accounts.AccountHolderDetails", reflect.TypeOf(accountHolderDetails).String())
+	}
+
+	if accountHolderDetails.BankNumber != BANK_NUMBER {
+		t.Errorf("SetAccountHolderDetails does not pass. DETAILS. Looking for %v, got %v", BANK_NUMBER, accountHolderDetails.BankNumber)
+	}
+
+	if accountHolderDetails.GivenName != "John" {
+		t.Errorf("SetAccountHolderDetails does not pass. DETAILS. Looking for %v, got %v", "John", accountHolderDetails.GivenName)
+	}
+
+	if accountHolderDetails.FamilyName != "Doe" {
+		t.Errorf("SetAccountHolderDetails does not pass. DETAILS. Looking for %v, got %v", "Doe", accountHolderDetails.FamilyName)
+	}
+
+	if accountHolderDetails.DateOfBirth != "01011900" {
+		t.Errorf("SetAccountHolderDetails does not pass. DETAILS. Looking for %v, got %v", "01011900", accountHolderDetails.DateOfBirth)
+	}
+
+	if accountHolderDetails.IdentificationNumber != "010119001234123" {
+		t.Errorf("SetAccountHolderDetails does not pass. DETAILS. Looking for %v, got %v", "010119001234123", accountHolderDetails.IdentificationNumber)
+	}
+
+	if accountHolderDetails.ContactNumber1 != "111" {
+		t.Errorf("SetAccountHolderDetails does not pass. DETAILS. Looking for %v, got %v", "111", accountHolderDetails.ContactNumber1)
+	}
+
+	if accountHolderDetails.ContactNumber2 != "222" {
+		t.Errorf("SetAccountHolderDetails does not pass. DETAILS. Looking for %v, got %v", "222", accountHolderDetails.ContactNumber2)
+	}
+
+	if accountHolderDetails.EmailAddress != "user@domain.com" {
+		t.Errorf("SetAccountHolderDetails does not pass. DETAILS. Looking for %v, got %v", "user@domain.com", accountHolderDetails.EmailAddress)
+	}
+
+	if accountHolderDetails.AddressLine1 != "address 1" {
+		t.Errorf("SetAccountHolderDetails does not pass. DETAILS. Looking for %v, got %v", "address 1", accountHolderDetails.AddressLine1)
+	}
+
+	if accountHolderDetails.AddressLine2 != "address 2" {
+		t.Errorf("SetAccountHolderDetails does not pass. DETAILS. Looking for %v, got %v", "address 2", accountHolderDetails.AddressLine2)
+	}
+
+	if accountHolderDetails.AddressLine3 != "address 3" {
+		t.Errorf("SetAccountHolderDetails does not pass. DETAILS. Looking for %v, got %v", "address 3", accountHolderDetails.AddressLine3)
+	}
+
+	if accountHolderDetails.PostalCode != "2000" {
+		t.Errorf("SetAccountHolderDetails does not pass. DETAILS. Looking for %v, got %v", "2000", accountHolderDetails.PostalCode)
+	}
+}

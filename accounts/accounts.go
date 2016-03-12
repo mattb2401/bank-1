@@ -73,7 +73,7 @@ type AccountHolderDetails struct {
 	BankNumber           string
 	GivenName            string
 	FamilyName           string
-	DateOfBirth          int64
+	DateOfBirth          string
 	IdentificationNumber string
 	ContactNumber1       string
 	ContactNumber2       string
@@ -81,7 +81,7 @@ type AccountHolderDetails struct {
 	AddressLine1         string
 	AddressLine2         string
 	AddressLine3         string
-	PostalCode           int64
+	PostalCode           string
 }
 
 type AccountDetails struct {
@@ -121,10 +121,10 @@ func ProcessAccount(data []string) (result string, err error) {
 		result, err = openAccount(data)
 		break
 	case 1000:
-		result = fetchAccounts(data)
+		result, err = fetchAccounts(data)
 		break
 	case 1001:
-		result = fetchSingleAccount(data)
+		result, err = fetchSingleAccount(data)
 		break
 	case 1002:
 		if len(data) < 3 {
@@ -179,10 +179,10 @@ func openAccount(data []string) (result string, err error) {
 
 func setAccountDetails(data []string) (accountDetails AccountDetails, err error) {
 	if data[4] == "" {
-		return AccountDetails{}, errors.New("accounts.SetAccountDetails: Family name cannot be empty")
+		return AccountDetails{}, errors.New("accounts.setAccountDetails: Family name cannot be empty")
 	}
 	if data[3] == "" {
-		return AccountDetails{}, errors.New("accounts.SetAccountDetails: Family name cannot be empty")
+		return AccountDetails{}, errors.New("accounts.setAccountDetails: Given name cannot be empty")
 	}
 	accountDetails.BankNumber = BANK_NUMBER
 	accountDetails.AccountHolderName = data[4] + "," + data[3] // Family Name, Given Name
@@ -194,28 +194,22 @@ func setAccountDetails(data []string) (accountDetails AccountDetails, err error)
 }
 
 func setAccountHolderDetails(data []string) (accountHolderDetails AccountHolderDetails, err error) {
-	dob, err := strconv.ParseInt(data[5], 10, 64)
-	if err != nil {
-		return AccountHolderDetails{}, err
+	if len(data) < 14 {
+		return AccountHolderDetails{}, errors.New("accounts.setAccountHolderDetails: Not all field values present")
 	}
-
-	postalCode, err := strconv.ParseInt(data[13], 10, 64)
-	if err != nil {
-		return AccountHolderDetails{}, err
-	}
-
+	//@TODO: Test date parsing in format ddmmyyyy
 	if data[4] == "" {
 		return AccountHolderDetails{}, errors.New("accounts.setAccountHolderDetails: Family name cannot be empty")
 	}
 	if data[3] == "" {
-		return AccountHolderDetails{}, errors.New("accounts.setAccountHolderDetails: Family name cannot be empty")
+		return AccountHolderDetails{}, errors.New("accounts.setAccountHolderDetails: Given name cannot be empty")
 	}
 
 	// @TODO Integrity checks
 	accountHolderDetails.BankNumber = BANK_NUMBER
 	accountHolderDetails.GivenName = data[3]
 	accountHolderDetails.FamilyName = data[4]
-	accountHolderDetails.DateOfBirth = dob
+	accountHolderDetails.DateOfBirth = data[5]
 	accountHolderDetails.IdentificationNumber = data[6]
 	accountHolderDetails.ContactNumber1 = data[7]
 	accountHolderDetails.ContactNumber2 = data[8]
@@ -223,28 +217,26 @@ func setAccountHolderDetails(data []string) (accountHolderDetails AccountHolderD
 	accountHolderDetails.AddressLine1 = data[10]
 	accountHolderDetails.AddressLine2 = data[11]
 	accountHolderDetails.AddressLine3 = data[12]
-	accountHolderDetails.PostalCode = postalCode
+	accountHolderDetails.PostalCode = data[13]
 
 	return
 }
 
-func fetchAccounts(data []string) (result string) {
+func fetchAccounts(data []string) (result string, err error) {
 	// Fetch all accounts. This fetches non-sensitive information (no balances)
 	accounts := getAllAccountDetails()
 
 	// Parse into nice result string
 	jsonAccounts, err := json.Marshal(accounts)
 	if err != nil {
-		fmt.Println("Error parsing results to json")
-		result = "0~Error parsing results to string"
-		return
+		return "", err
 	}
 
 	result = "1~" + string(jsonAccounts)
 	return
 }
 
-func fetchSingleAccount(data []string) (result string) {
+func fetchSingleAccount(data []string) (result string, err error) {
 	// Fetch user account. Must be user logged in
 	tokenUser := appauth.GetUserFromToken(data[0])
 	account := getSingleAccountDetail(tokenUser)
@@ -252,9 +244,7 @@ func fetchSingleAccount(data []string) (result string) {
 	// Parse into nice result string
 	jsonAccount, err := json.Marshal(account)
 	if err != nil {
-		fmt.Println("Error parsing results to json")
-		result = "0~Error parsing results to string"
-		return
+		return "", err
 	}
 
 	result = "1~" + string(jsonAccount)
