@@ -131,7 +131,7 @@ func ProcessAccount(data []string) (result string, err error) {
 			err = errors.New("accounts.ProcessAccount: Not all fields present")
 			return
 		}
-		result = fetchSingleAccountByID(data)
+		result, err = fetchSingleAccountByID(data)
 		break
 	default:
 		err = errors.New("accounts.ProcessAccount: ACMT transaction code invalid")
@@ -152,7 +152,10 @@ func openAccount(data []string) (result string, err error) {
 
 	// Test: acmt~1~Kyle~Redelinghuys~19000101~190001011234098~1112223456~~email@domain.com~Physical Address 1~~~1000
 	// Check if account already exists, check on ID number
-	accountHolder := getAccountMeta(data[6])
+	accountHolder, err := getAccountMeta(data[6])
+	if err != nil {
+		return
+	}
 	fmt.Println(accountHolder)
 	if accountHolder.AccountNumber != "" {
 		return "", errors.New("accounts.openAccount" + accountHolder.AccountNumber + "~Account already open")
@@ -227,7 +230,10 @@ func setAccountHolderDetails(data []string) (accountHolderDetails AccountHolderD
 
 func fetchAccounts(data []string) (result string, err error) {
 	// Fetch all accounts. This fetches non-sensitive information (no balances)
-	accounts := getAllAccountDetails()
+	accounts, err := getAllAccountDetails()
+	if err != nil {
+		return
+	}
 
 	// Parse into nice result string
 	jsonAccounts, err := json.Marshal(accounts)
@@ -242,7 +248,10 @@ func fetchAccounts(data []string) (result string, err error) {
 func fetchSingleAccount(data []string) (result string, err error) {
 	// Fetch user account. Must be user logged in
 	tokenUser := appauth.GetUserFromToken(data[0])
-	account := getSingleAccountDetail(tokenUser)
+	account, err := getSingleAccountDetail(tokenUser)
+	if err != nil {
+		return
+	}
 
 	// Parse into nice result string
 	jsonAccount, err := json.Marshal(account)
@@ -254,11 +263,14 @@ func fetchSingleAccount(data []string) (result string, err error) {
 	return
 }
 
-func fetchSingleAccountByID(data []string) (result string) {
+func fetchSingleAccountByID(data []string) (result string, err error) {
 	// Format: appauth~1002~USERID
 	userID := data[2]
 
-	userAccountNumber := getSingleAccountNumberByID(userID)
+	userAccountNumber, err := getSingleAccountNumberByID(userID)
+	if err != nil {
+		return
+	}
 
 	result = userAccountNumber
 	return

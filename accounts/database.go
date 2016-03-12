@@ -6,7 +6,7 @@ package accounts
 
 import (
 	"database/sql"
-	"fmt"
+	"errors"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -109,53 +109,48 @@ func doCreateAccountMeta(sqlTime int32, accountHolderDetails *AccountHolderDetai
 	return
 }
 
-func getAccountDetails(id string) (accountDetails AccountDetails) {
+func getAccountDetails(id string) (accountDetails AccountDetails, err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		fmt.Println("Could not connect to database")
 		return
 	}
 
 	rows, err := db.Query("SELECT `accountNumber`, `bankNumber`, `accountHolderName`, `accountBalance`, `overdraft`, `availableBalance` FROM `accounts` WHERE `accountNumber` = ?", id)
 	if err != nil {
-		fmt.Println("Error with select query: " + err.Error())
+		return
 	}
 	defer rows.Close()
 
 	count := 0
 	for rows.Next() {
-		if err := rows.Scan(&accountDetails.AccountNumber, &accountDetails.BankNumber, &accountDetails.AccountHolderName, &accountDetails.AccountBalance, &accountDetails.Overdraft, &accountDetails.AvailableBalance); err != nil {
-			//@TODO Throw error
-			fmt.Println("ERROR: Could not retrieve account details")
-			return
+		err := rows.Scan(&accountDetails.AccountNumber, &accountDetails.BankNumber, &accountDetails.AccountHolderName, &accountDetails.AccountBalance, &accountDetails.Overdraft, &accountDetails.AvailableBalance)
+		if err != nil {
+			break
 		}
 		count++
 	}
 
 	if count == 0 {
-		fmt.Println("Account not found")
-		return
+		return AccountDetails{}, errors.New("Account not found")
 	}
 
 	if count > 1 {
-		//@TODO Allow multiple accounts
-		fmt.Println("ERROR: More than one account found")
-		return
+		//@TODO: Allow user to have multiple accounts
+		return AccountDetails{}, errors.New("More than one account found")
 	}
 
 	return
 }
 
-func getAccountMeta(id string) (accountDetails AccountHolderDetails) {
+func getAccountMeta(id string) (accountDetails AccountHolderDetails, err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		fmt.Println("Could not connect to database")
 		return
 	}
 
 	rows, err := db.Query("SELECT `accountNumber`, `bankNumber`, `accountHolderGivenName`, `accountHolderFamilyName`, `accountHolderDateOfBirth`, `accountHolderIdentificationNumber`, `accountHolderContactNumber1`, `accountHolderContactNumber2`, `accountHolderEmailAddress`, `accountHolderAddressLine1`, `accountHolderAddressLine2`, `accountHolderAddressLine3`, `accountHolderPostalCode` FROM `accounts_meta` WHERE `accountHolderIdentificationNumber` = ?", id)
 	if err != nil {
-		fmt.Println("Error with select query: " + err.Error())
+		return
 	}
 	defer rows.Close()
 
@@ -164,36 +159,32 @@ func getAccountMeta(id string) (accountDetails AccountHolderDetails) {
 		if err := rows.Scan(&accountDetails.AccountNumber, &accountDetails.BankNumber, &accountDetails.GivenName, &accountDetails.FamilyName, &accountDetails.DateOfBirth, &accountDetails.IdentificationNumber, &accountDetails.ContactNumber1, &accountDetails.ContactNumber2, &accountDetails.EmailAddress, &accountDetails.AddressLine1, &accountDetails.AddressLine2,
 			&accountDetails.AddressLine3, &accountDetails.PostalCode); err != nil {
 			//@TODO Throw error
-			fmt.Println("ERROR: Could not retrieve account details")
-			return
+			break
 		}
 		count++
 	}
 
 	if count == 0 {
-		fmt.Println("Account not found")
-		return
+		return AccountHolderDetails{}, errors.New("Account not found")
 	}
 
 	if count > 1 {
-		//@TODO Allow for a customer to have more than one account
-		fmt.Println("ERROR: More than one account found")
-		return
+		//@TODO: Allow user to have multiple accounts
+		return AccountHolderDetails{}, errors.New("More than one account found")
 	}
 
 	return
 }
 
-func getAllAccountDetails() (allAccounts []AccountDetails) {
+func getAllAccountDetails() (allAccounts []AccountDetails, err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		fmt.Println("Could not connect to database")
 		return
 	}
 
 	rows, err := db.Query("SELECT `accountNumber`, `bankNumber`, `accountHolderName` FROM `accounts`")
 	if err != nil {
-		fmt.Println("Error with select query: " + err.Error())
+		return
 	}
 	defer rows.Close()
 
@@ -203,65 +194,49 @@ func getAllAccountDetails() (allAccounts []AccountDetails) {
 	for rows.Next() {
 		accountDetailsSingle := AccountDetails{}
 		if err := rows.Scan(&accountDetailsSingle.AccountNumber, &accountDetailsSingle.BankNumber, &accountDetailsSingle.AccountHolderName); err != nil {
-			//@TODO Throw error
-			fmt.Println("ERROR: Could not retrieve account details")
-			return
+			break
 		}
 
 		allAccounts = append(allAccounts, accountDetailsSingle)
 		count++
 	}
 
-	if count == 0 {
-		fmt.Println("No accounts")
-		return
-	}
-
 	return
 }
 
-func getSingleAccountDetail(accountNumber string) (account AccountDetails) {
+func getSingleAccountDetail(accountNumber string) (account AccountDetails, err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		fmt.Println("Could not connect to database")
 		return
 	}
 
 	rows, err := db.Query("SELECT `accountNumber`, `bankNumber`, `accountHolderName`, `accountBalance`, `overdraft`, `availableBalance` FROM `accounts` WHERE `accountNumber` = ?", accountNumber)
 	if err != nil {
-		fmt.Println("Error with select query: " + err.Error())
+		return
 	}
 	defer rows.Close()
 
 	count := 0
 	for rows.Next() {
 		if err := rows.Scan(&account.AccountNumber, &account.BankNumber, &account.AccountHolderName, &account.AccountBalance, &account.Overdraft, &account.AvailableBalance); err != nil {
-			//@TODO Throw error
-			fmt.Println("ERROR: Could not retrieve account details")
-			return
+			break
 		}
 
 		count++
 	}
 
-	if count == 0 {
-		fmt.Println("No accounts")
-		return
-	}
-
 	return
 }
 
-func getSingleAccountNumberByID(userID string) (accountID string) {
+func getSingleAccountNumberByID(userID string) (accountID string, err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		fmt.Println("Could not connect to database")
 		return
 	}
 
 	rows, err := db.Query("SELECT `accountNumber` FROM `accounts_meta` WHERE `accountHolderIdentificationNumber` = ?", userID)
 	if err != nil {
-		fmt.Println("Error with select query: " + err.Error())
+		return
 	}
 	defer rows.Close()
 
@@ -269,17 +244,9 @@ func getSingleAccountNumberByID(userID string) (accountID string) {
 	// @TODO Right now this will return the latest account only, if there are two accounts
 	for rows.Next() {
 		if err := rows.Scan(&accountID); err != nil {
-			//@TODO Throw error
-			fmt.Println("ERROR: Could not retrieve account details")
-			return
+			break
 		}
-
 		count++
-	}
-
-	if count == 0 {
-		fmt.Println("No accounts")
-		return
 	}
 
 	return
