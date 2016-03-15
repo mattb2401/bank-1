@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -19,7 +20,10 @@ var Config configuration.Configuration
 func runServer(mode string) (message string, err error) {
 
 	// Load app config
-	Config := configuration.LoadConfig()
+	Config, err := configuration.LoadConfig()
+	if err != nil {
+		return "", errors.New("server.runServer: " + err.Error())
+	}
 	// Set config in packages
 	accounts.SetConfig(&Config)
 	payments.SetConfig(&Config)
