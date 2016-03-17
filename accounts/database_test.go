@@ -34,7 +34,7 @@ func TestLoadDatabase(t *testing.T) {
 func TestDoCreateAccount(t *testing.T) {
 	//accountDetails AccountDetails, accountHolderDetails AccountHolderDetails
 	accountDetail := AccountDetails{
-		"1111",
+		"",
 		"",
 		"User,Test",
 		0.,
@@ -50,21 +50,8 @@ func TestDoCreateAccount(t *testing.T) {
 	if err != nil {
 		t.Errorf("DoCreateAccount does not pass. Looking for %v, got %v", nil, err)
 	}
-}
 
-func TestDoDeleteAccount(t *testing.T) {
-	accountDetail := AccountDetails{
-		"1111",
-		"",
-		"User,Test",
-		0.,
-		0.,
-		0.,
-		0,
-	}
-
-	err := doDeleteAccount(&accountDetail)
-
+	err = doDeleteAccount(&accountDetail)
 	if err != nil {
 		t.Errorf("DoDeleteAccount does not pass. Looking for %v, got %v", nil, err)
 	}
@@ -72,7 +59,7 @@ func TestDoDeleteAccount(t *testing.T) {
 
 func TestDoAccountMeta(t *testing.T) {
 	accountDetail := AccountDetails{
-		"1111",
+		"",
 		"",
 		"User,Test",
 		0.,
@@ -82,7 +69,7 @@ func TestDoAccountMeta(t *testing.T) {
 	}
 
 	accountHolderDetail := AccountHolderDetails{
-		"1111",
+		"",
 		"",
 		"Test",
 		"User",
@@ -104,11 +91,16 @@ func TestDoAccountMeta(t *testing.T) {
 	if err != nil {
 		t.Errorf("DoCreateAccountMeta does not pass. Looking for %v, got %v", nil, err)
 	}
+
+	err = doDeleteAccountMeta(&accountHolderDetail, &accountDetail)
+	if err != nil {
+		t.Errorf("DoDeleteAccountMeta does not pass. Looking for %v, got %v", nil, err)
+	}
 }
 
-func TestDoDeleteAccountMeta(t *testing.T) {
+func TestGetAccount(t *testing.T) {
 	accountDetail := AccountDetails{
-		"1111",
+		"",
 		"",
 		"User,Test",
 		0.,
@@ -118,7 +110,7 @@ func TestDoDeleteAccountMeta(t *testing.T) {
 	}
 
 	accountHolderDetail := AccountHolderDetails{
-		"1111",
+		"",
 		"",
 		"Test",
 		"User",
@@ -133,9 +125,53 @@ func TestDoDeleteAccountMeta(t *testing.T) {
 		"22202",
 	}
 
-	err := doDeleteAccountMeta(&accountHolderDetail, &accountDetail)
+	ti := time.Now()
+	sqlTime := int32(ti.Unix())
 
+	err := doCreateAccount(sqlTime, &accountDetail)
 	if err != nil {
-		t.Errorf("DoDeleteAccountMeta does not pass. Looking for %v, got %v", nil, err)
+		t.Errorf("GetAccountCreateAccount does not pass. Looking for %v, got %v", nil, err)
 	}
+
+	err = doCreateAccountMeta(sqlTime, &accountHolderDetail, &accountDetail)
+	if err != nil {
+		t.Errorf("GetAccountCreateAccountMeta does not pass. Looking for %v, got %v", nil, err)
+	}
+
+	// Get account
+	getAccountDetails, err := getAccountDetails(accountDetail.AccountNumber)
+	if err != nil {
+		t.Errorf("GetAccountDetails does not pass. Looking for %v, got %v", nil, err)
+		return
+	}
+	//Check values
+	if getAccountDetails.AccountNumber != accountDetail.AccountNumber {
+		t.Errorf("GetAccountDetails does not pass. DETAILS. AccountNumber: Looking for %v, got %v", accountDetail.AccountNumber, getAccountDetails.AccountNumber)
+	}
+	if getAccountDetails.BankNumber != "" {
+		t.Errorf("GetAccountDetails does not pass. DETAILS. BankNumber: Looking for %v, got %v", "", getAccountDetails.BankNumber)
+	}
+	if getAccountDetails.Overdraft != 0. {
+		t.Errorf("GetAccountDetails does not pass. DETAILS. Overdraft: Looking for %v, got %v", 0., getAccountDetails.Overdraft)
+	}
+	if getAccountDetails.AvailableBalance != 0. {
+		t.Errorf("GetAccountDetails does not pass. DETAILS. AvailableBalance: Looking for %v, got %v", 0., getAccountDetails.AvailableBalance)
+	}
+	if getAccountDetails.AccountBalance != 0. {
+		t.Errorf("GetAccountDetails does not pass. DETAILS. AccountBalance: Looking for %v, got %v", 0., getAccountDetails.AccountBalance)
+	}
+	if getAccountDetails.AccountHolderName != "User,Test" {
+		t.Errorf("GetAccountDetails does not pass. DETAILS. AccountHodlerName: Looking for %v, got %v", "User,Test", getAccountDetails.AccountHolderName)
+	}
+
+	err = doDeleteAccount(&accountDetail)
+	if err != nil {
+		t.Errorf("GetAccountDeleteAccount does not pass. Looking for %v, got %v", nil, err)
+	}
+
+	err = doDeleteAccountMeta(&accountHolderDetail, &accountDetail)
+	if err != nil {
+		t.Errorf("GetAccountDeleteAccountMeta does not pass. Looking for %v, got %v", nil, err)
+	}
+
 }
