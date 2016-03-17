@@ -101,7 +101,7 @@ func doDeleteAccount(accountDetails *AccountDetails) (err error) {
 		return
 	}
 	// Create account
-	deleteStatement := "DELETE FROM accounts WHERE `accountNumber` = ? AND `bankNumber` = ? AND `accountHolderName` = ?) "
+	deleteStatement := "DELETE FROM accounts WHERE `accountNumber` = ? AND `bankNumber` = ? AND `accountHolderName` = ? "
 	stmtDel, err := db.Prepare(deleteStatement)
 	if err != nil {
 		return
@@ -152,8 +152,7 @@ func doDeleteAccountMeta(accountHolderDetails *AccountHolderDetails, accountDeta
 		return
 	}
 	// Create account meta
-	deleteStatement := "DELETE FROM accounts_meta WHERE `accountNumber` = ? AND `bankNumber` = ? AND `accountHolderGivenName` = ? AND `accountHolderFamilyName` = ? AND `accountHolderDateOfBirth` = ? AND `accountHolderIdentificationNumber` = ? AND `accountHolderContactNumber1` = ? AND `accountHolderContactNumber2` = ? AND `accountHolderEmailAddress` = ? AND `accountHolderAddressLine1` = ? AND `accountHolderAddressLine2` = ? AND `accountHolderAddressLine3` = ? AND `accountHolderPostalCode` = ?) "
-	deleteStatement += "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	deleteStatement := "DELETE FROM accounts_meta WHERE `accountNumber` = ? AND `bankNumber` = ? AND `accountHolderGivenName` = ? AND `accountHolderFamilyName` = ? AND `accountHolderDateOfBirth` = ? AND `accountHolderIdentificationNumber` = ? AND `accountHolderContactNumber1` = ? AND `accountHolderContactNumber2` = ? AND `accountHolderEmailAddress` = ? AND `accountHolderAddressLine1` = ? AND `accountHolderAddressLine2` = ? AND `accountHolderAddressLine3` = ? AND `accountHolderPostalCode` = ? "
 	stmtDel, err := db.Prepare(deleteStatement)
 	if err != nil {
 		return

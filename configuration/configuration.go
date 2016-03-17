@@ -18,9 +18,11 @@ type Configuration struct {
 	PasswordSalt string
 }
 
+var configPath = "/Users/ksred/golang/projects/src/github.com/ksred/bank/config.json"
+
 func LoadConfig() (configuration Configuration, err error) {
 	// Get config
-	file, _ := os.Open("config.json")
+	file, _ := os.Open(configPath)
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&configuration)
 	if err != nil {
