@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"log"
 	"os"
 )
@@ -15,14 +14,9 @@ const (
 )
 
 func main() {
-	modeFlag := flag.String("mode", "", "Test to run")
+	argClientServer := os.Args[1]
 
-	flag.Parse()
-
-	// Dereference
-	flagParsed := *modeFlag
-
-	err := parseFlags(flagParsed)
+	err := parseArguments(argClientServer)
 	if err != nil {
 		log.Fatalf("Error starting, err: %v\n", err)
 		os.Exit(1)
@@ -30,8 +24,8 @@ func main() {
 	os.Exit(0)
 }
 
-func parseFlags(flagParsed string) (err error) {
-	switch flagParsed {
+func parseArguments(arg string) (err error) {
+	switch arg {
 	case "client":
 		// Run client for bank system
 		runClient("tls")
