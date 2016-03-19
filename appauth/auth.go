@@ -4,12 +4,13 @@ import (
 	"crypto/sha512"
 	"database/sql"
 	"encoding/hex"
-	"fmt"
+	"errors"
+	"time"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/ksred/bank/configuration"
 	"github.com/satori/go.uuid"
 	"gopkg.in/redis.v3"
-	"time"
 )
 
 const (
@@ -22,41 +23,48 @@ func SetConfig(config *configuration.Configuration) {
 	Config = *config
 }
 
-func ProcessAppAuth(data []string) (result string) {
+func ProcessAppAuth(data []string) (result string, err error) {
+	//@TODO: Change from []string to something more solid, struct/interface/key-pair
+	if len(data) < 3 {
+		return "", errors.New("appauth.ProcessAppAuth: Not all required fields present")
+	}
 	switch data[2] {
 	// Auth an existing account
 	case "1":
 		// TOKEN~appauth~1
 		if len(data) < 3 {
-			result = "0~Not all required fields present"
+			return "", errors.New("appauth.ProcessAppAuth: Not all required fields present")
 		}
-		res := CheckToken(data[0])
-		if res {
-			result = "1~Token valid"
-		} else {
-			result = "0~Token not valid"
+		result, err := CheckToken(data[0])
+		if err != nil {
+			return "", err
 		}
-		break
+		return result, nil
 		// Log in
 	case "2":
 		if len(data) < 5 {
-			result = "0~Not all required fields present"
+			return "", errors.New("appauth.ProcessAppAuth: Not all required fields present")
 		}
-		result = CreateToken(data[3], data[4])
-		break
+		result, err = CreateToken(data[3], data[4])
+		if err != nil {
+			return "", err
+		}
+		return result, nil
 	// Create an account
 	case "3":
 		if len(data) < 5 {
-			result = "0~Not all required fields present"
+			return "", errors.New("appauth.ProcessAppAuth: Not all required fields present")
 		}
-		result = CreateUserPassword(data[3], data[4])
-		break
+		result, err = CreateUserPassword(data[3], data[4])
+		if err != nil {
+			return "", err
+		}
+		return result, nil
 	}
-
-	return
+	return "", errors.New("appauth.ProcessAppAuth: No valid option chosen")
 }
 
-func CreateUserPassword(user string, password string) (result string) {
+func CreateUserPassword(user string, password string) (result string, err error) {
 	//TEST 0~appauth~3~181ac0ae-45cb-461d-b740-15ce33e4612f~testPassword
 	// Generate hash
 	hasher := sha512.New()
@@ -65,14 +73,13 @@ func CreateUserPassword(user string, password string) (result string) {
 
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		fmt.Println("Could not connect to database")
-		return
+		return "", errors.New("appauth.CreateUserPassword: Could not connect to database")
 	}
 
 	// Check for existing account
 	rows, err := db.Query("SELECT `accountNumber` FROM `accounts_auth` WHERE `accountNumber` = ?", user)
 	if err != nil {
-		fmt.Println("Error with select query: " + err.Error())
+		return "", errors.New("appauth.CreateUserPassword: Error with select query. " + err.Error())
 	}
 	defer rows.Close()
 
@@ -83,8 +90,7 @@ func CreateUserPassword(user string, password string) (result string) {
 	}
 
 	if count > 0 {
-		result = "0~Account already exists"
-		return
+		return "", errors.New("appauth.CreateUserPassword: Account already exists")
 	}
 
 	// Prepare statement for inserting data
@@ -92,7 +98,7 @@ func CreateUserPassword(user string, password string) (result string) {
 	insertStatement += "VALUES(?, ?, ?)"
 	stmtIns, err := db.Prepare(insertStatement)
 	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
+		return "", errors.New("appauth.CreateUserPassword: Error with insert. " + err.Error())
 	}
 	defer stmtIns.Close() // Close the statement when we leave main() / the program terminates
 
@@ -103,25 +109,23 @@ func CreateUserPassword(user string, password string) (result string) {
 	_, err = stmtIns.Exec(user, hash, sqlTime)
 
 	if err != nil {
-		fmt.Println("Could not save account: " + err.Error())
+		return "", errors.New("appauth.CreateUserPassword: Could not save account. " + err.Error())
 	}
 
-	// @FIXME This is not being returned
-	result = "1~Successfully created account"
+	result = "Successfully created account"
 	return
 }
 
-func CreateToken(user string, password string) (token string) {
+func CreateToken(user string, password string) (token string, err error) {
 	// Check if username and password match
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		fmt.Println("Could not connect to database")
-		return
+		return "", errors.New("appauth.CreateToken: Could not connect to database")
 	}
 
 	rows, err := db.Query("SELECT `password` FROM `accounts_auth` WHERE `accountNumber` = ?", user)
 	if err != nil {
-		fmt.Println("Error with select query: " + err.Error())
+		return "", errors.New("appauth.CreateToken: Error with select query. " + err.Error())
 	}
 	defer rows.Close()
 
@@ -129,9 +133,7 @@ func CreateToken(user string, password string) (token string) {
 	hashedPassword := ""
 	for rows.Next() {
 		if err := rows.Scan(&hashedPassword); err != nil {
-			//@TODO Throw error
-			fmt.Println("ERROR: Could not retrieve account details")
-			return
+			return "", errors.New("appauth.CreateToken: Could not retreive account details")
 		}
 		count++
 	}
@@ -142,8 +144,7 @@ func CreateToken(user string, password string) (token string) {
 	hash := hex.EncodeToString(hasher.Sum(nil))
 
 	if hash != hashedPassword {
-		token = "0~Authentication credentials invalid"
-		return
+		return "", errors.New("appauth.CreateToken: Authentication credentials invalid")
 	}
 
 	client := redis.NewClient(&redis.Options{
@@ -158,13 +159,13 @@ func CreateToken(user string, password string) (token string) {
 	// @TODO Remove all tokens for this user
 	err = client.Set(token, user, TOKEN_TTL).Err()
 	if err != nil {
-		panic(err)
+		return "", errors.New("appauth.CreateToken: Could not set token. " + err.Error())
 	}
 
 	return
 }
 
-func CheckToken(token string) (res bool) {
+func CheckToken(token string) (result string, err error) {
 	//TEST 0~appauth~480e67e3-e2c9-48ee-966c-8d251474b669
 	client := redis.NewClient(&redis.Options{
 		Addr:     Config.RedisHost + ":" + Config.RedisPort,
@@ -175,17 +176,17 @@ func CheckToken(token string) (res bool) {
 	user, err := client.Get(token).Result()
 
 	if err == redis.Nil {
-		res = false
+		return "", errors.New("appauth.CheckToken: Token not found. " + err.Error())
 	} else if err != nil {
-		panic(err)
+		return "", errors.New("appauth.CheckToken: Could not get token. " + err.Error())
 	} else {
 		// Extend token
 		err := client.Set(user, token, TOKEN_TTL).Err()
 		if err != nil {
-			panic(err)
+			return "", errors.New("appauth.CheckToken: Could not extend token. " + err.Error())
 		}
 
-		res = true
+		result = "Token valid"
 	}
 
 	return
