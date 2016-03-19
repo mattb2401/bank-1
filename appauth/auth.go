@@ -35,7 +35,7 @@ func ProcessAppAuth(data []string) (result string, err error) {
 		if len(data) < 3 {
 			return "", errors.New("appauth.ProcessAppAuth: Not all required fields present")
 		}
-		result, err := CheckToken(data[0])
+		err := CheckToken(data[0])
 		if err != nil {
 			return "", err
 		}
@@ -227,7 +227,7 @@ func RemoveToken(token string) (result string, err error) {
 	return
 }
 
-func CheckToken(token string) (result string, err error) {
+func CheckToken(token string) (err error) {
 	//TEST 0~appauth~480e67e3-e2c9-48ee-966c-8d251474b669
 	client := redis.NewClient(&redis.Options{
 		Addr:     Config.RedisHost + ":" + Config.RedisPort,
@@ -238,17 +238,15 @@ func CheckToken(token string) (result string, err error) {
 	user, err := client.Get(token).Result()
 
 	if err == redis.Nil {
-		return "", errors.New("appauth.CheckToken: Token not found. " + err.Error())
+		return errors.New("appauth.CheckToken: Token not found. " + err.Error())
 	} else if err != nil {
-		return "", errors.New("appauth.CheckToken: Could not get token. " + err.Error())
+		return errors.New("appauth.CheckToken: Could not get token. " + err.Error())
 	} else {
 		// Extend token
 		err := client.Set(user, token, TOKEN_TTL).Err()
 		if err != nil {
-			return "", errors.New("appauth.CheckToken: Could not extend token. " + err.Error())
+			return errors.New("appauth.CheckToken: Could not extend token. " + err.Error())
 		}
-
-		result = "Token valid"
 	}
 
 	return

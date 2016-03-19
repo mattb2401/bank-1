@@ -55,7 +55,7 @@ func runServer(mode string) (message string, err error) {
 				return "", err
 			}
 			// Handle connections in a new goroutine.
-			go handleRequest(conn)
+			go handleTCPRequest(conn)
 		}
 	case "no-tls":
 		// Listen for incoming connections.
@@ -74,7 +74,7 @@ func runServer(mode string) (message string, err error) {
 				return "", err
 			}
 			// Handle connections in a new goroutine.
-			go handleRequest(conn)
+			go handleTCPRequest(conn)
 		}
 	}
 
@@ -82,7 +82,7 @@ func runServer(mode string) (message string, err error) {
 }
 
 // Handles incoming requests.
-func handleRequest(conn net.Conn) (err error) {
+func handleTCPRequest(conn net.Conn) (err error) {
 	// Make a buffer to hold incoming data.
 	buf := make([]byte, 1024)
 	// Read the incoming connection into the buffer.
@@ -95,8 +95,14 @@ func handleRequest(conn net.Conn) (err error) {
 	// Process
 	result, err := processCommand(s)
 
+	// Convert response to text
+	textResponse := "1~" + result
+	if err != nil {
+		textResponse = "0~" + err.Error()
+	}
+
 	// Send a response back to person contacting us.
-	conn.Write([]byte(result + "\n"))
+	conn.Write([]byte(textResponse + "\n"))
 	// Close the connection when you're done with it.
 	conn.Close()
 
@@ -121,36 +127,37 @@ func processCommand(text string) (result string, err error) {
 
 	// Check application auth. This is always the first value, if no token a 0 is sent
 	if command[0] != "0" {
-		res := appauth.CheckToken(command[0])
-		if !res {
-			result = "0~Incorrect token"
-			return
+		err := appauth.CheckToken(command[0])
+		if err != nil {
+			return "", errors.New("server.processCommand: " + err.Error())
 		}
-		fmt.Println("Token valid")
 	}
 
 	switch command[1] {
 	case "appauth":
 		// Check "help"
 		if command[2] == "help" {
-			fmt.Println("Format of appauth: appauth~userName~password")
-			return
+			return "Format of appauth: appauth~userName~password", nil
 		}
-		result = appauth.ProcessAppAuth(command)
+		result, err = appauth.ProcessAppAuth(command)
+		if err != nil {
+			return "", errors.New("server.processCommand: " + err.Error())
+		}
 		break
 	case "pain":
 		// Check "help"
 		if command[2] == "help" {
-			fmt.Println("Format of PAIN transaction:\npain\npainType~senderAccountNumber@SenderBankNumber\nreceiverAccountNumber@ReceiverBankNumber\ntransactionAmount\n\nBank numbers may be left void if bank is local")
-			return
+			return "Format of PAIN transaction:\npain\npainType~senderAccountNumber@SenderBankNumber\nreceiverAccountNumber@ReceiverBankNumber\ntransactionAmount\n\nBank numbers may be left void if bank is local", nil
 		}
-		result = payments.ProcessPAIN(command)
+		result, err = payments.ProcessPAIN(command)
+		if err != nil {
+			return "", errors.New("server.processCommand: " + err.Error())
+		}
 	case "camt":
 	case "acmt":
 		// Check "help"
 		if command[2] == "help" {
-			fmt.Println("") // @TODO Help section
-			return
+			return "", nil // @TODO Help section
 		}
 		result, err = accounts.ProcessAccount(command)
 	case "remt":
@@ -159,8 +166,7 @@ func processCommand(text string) (result string, err error) {
 	case "auth":
 		break
 	default:
-		fmt.Println("No valid command received")
-		break
+		return "No valid command received", nil
 	}
 
 	return

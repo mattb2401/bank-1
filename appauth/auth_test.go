@@ -85,7 +85,7 @@ func TestCreateRemoveCheckToken(t *testing.T) {
 		t.Errorf("CreateRemoveCheckToken Create does not pass. Looking for %v, got %v", nil, err)
 	}
 
-	_, err = CheckToken(token)
+	err = CheckToken(token)
 	if err != nil {
 		t.Errorf("CreateRemoveCheckToken Check does not pass. Looking for %v, got %v", nil, err)
 	}
