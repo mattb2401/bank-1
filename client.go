@@ -11,7 +11,7 @@ import (
 
 func runClient(mode string) {
 
-	fmt.Println("Go Banking Client\nWelcome\n")
+	fmt.Println("Go Banking Client\nWelcome")
 	// We create a loop which waits for inut on std io
 	fmt.Println("Running on " + CONN_HOST + ":" + CONN_PORT)
 	for {
@@ -23,41 +23,57 @@ func runClient(mode string) {
 			os.Exit(0)
 		}
 
-		// @TODO Send to server over TCP or similar
-		sendToServer(text, mode)
+		message, err := sendToServer(text, mode)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(message)
 	}
 }
 
-func sendToServer(text string, mode string) {
+func sendToServer(text string, mode string) (message string, err error) {
 	switch mode {
 	case "tls":
 		// Connect to this socket
 		cert, err := tls.LoadX509KeyPair("certs/client.pem", "certs/client.key")
 		if err != nil {
-			log.Fatal(err)
+			return "", err
 		}
 
 		config := tls.Config{Certificates: []tls.Certificate{cert}, InsecureSkipVerify: true}
 		conn, err := tls.Dial(CONN_TYPE, CONN_HOST+":"+CONN_PORT, &config)
 
 		if err != nil {
-			log.Fatal(err)
+			return "", err
 		}
 
 		// Send to socket
 		fmt.Fprintf(conn, text+"\n")
+
 		// Listen for reply
-		message, _ := bufio.NewReader(conn).ReadString('\n')
-		fmt.Print("Message from server: " + message)
-		break
+		message, err := bufio.NewReader(conn).ReadString('\n')
+		if err != nil {
+			return "", err
+		}
+		return message, nil
 	case "no-tls":
 		// Connect to this socket
-		conn, _ := net.Dial(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
+		conn, err := net.Dial(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
+		if err != nil {
+			return "", err
+		}
+
 		// Send to socket
 		fmt.Fprintf(conn, text+"\n")
+
 		// Listen for reply
-		message, _ := bufio.NewReader(conn).ReadString('\n')
-		fmt.Print("Message from server: " + message)
+		message, err := bufio.NewReader(conn).ReadString('\n')
+		if err != nil {
+			return "", err
+		}
+		return message, nil
 	}
 
+	return
 }

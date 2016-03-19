@@ -1,49 +1,52 @@
 package main
 
 import (
-	"flag"
-	"fmt"
+	"errors"
+	"log"
 	"os"
 )
 
+const (
+	// This is the FQDN from the certs generated
+	CONN_HOST = "localhost"
+	CONN_PORT = "3300"
+	CONN_TYPE = "tcp"
+)
+
 func main() {
-	parseFlags()
+	argClientServer := os.Args[1]
+
+	err := parseArguments(argClientServer)
+	if err != nil {
+		log.Fatalf("Error starting, err: %v\n", err)
+		os.Exit(1)
+	}
+	os.Exit(0)
 }
 
-func parseFlags() {
-	modeFlag := flag.String("mode", "", "Test to run")
-
-	flag.Parse()
-
-	// Dereference
-	flagParsed := *modeFlag
-
-	switch flagParsed {
+func parseArguments(arg string) (err error) {
+	switch arg {
 	case "client":
 		// Run client for bank system
 		runClient("tls")
-		os.Exit(0)
 		break
 	case "clientNoTLS":
 		// Run client for bank system
 		runClient("no-tls")
-		os.Exit(0)
 		break
 	case "server":
 		// Run server for bank system
 		for {
 			runServer("tls")
 		}
-		break
 	case "serverNoTLS":
 		// Run server for bank system
 		for {
 			runServer("no-tls")
 		}
-		break
 	default:
-		fmt.Println("No valid option chosen")
-		os.Exit(1)
-		break
+		return errors.New("No valid option chosen. Valid options: client, clientNoTLS, server, serverNoTLS")
 	}
+
+	return
 }

@@ -2,7 +2,7 @@ package configuration
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"os"
 )
 
@@ -18,13 +18,15 @@ type Configuration struct {
 	PasswordSalt string
 }
 
-func LoadConfig() (configuration Configuration) {
+var configPath = "/Users/ksred/golang/projects/src/github.com/ksred/bank/config.json"
+
+func LoadConfig() (configuration Configuration, err error) {
 	// Get config
-	file, _ := os.Open("config.json")
+	file, _ := os.Open(configPath)
 	decoder := json.NewDecoder(file)
-	err := decoder.Decode(&configuration)
+	err = decoder.Decode(&configuration)
 	if err != nil {
-		fmt.Println("error:", err)
+		return Configuration{}, errors.New("configuration.LoadConfig: Could not load config. " + err.Error())
 	}
 
 	return

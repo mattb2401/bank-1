@@ -6,3 +6,5 @@ rethinkdb_data/metadata
 config.json
 
 *.orig
+
+bank

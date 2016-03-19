@@ -2,10 +2,12 @@ package payments
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"time"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/ksred/bank/configuration"
-	"time"
 )
 
 var Config configuration.Configuration
@@ -14,36 +16,17 @@ func SetConfig(config *configuration.Configuration) {
 	Config = *config
 }
 
-func loadDatabase() (db *sql.DB) {
+func savePainTransaction(transaction PAINTrans) (err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		fmt.Println("Could not connect to database")
-		return
-	}
-	defer db.Close()
-
-	// Test connection with ping
-	err = db.Ping()
-	if err != nil {
-		fmt.Println("Ping error: " + err.Error()) // proper error handling instead of panic in your app
-		return
-	}
-
-	return
-}
-
-func savePainTransaction(transaction PAINTrans) {
-	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
-	if err != nil {
-		fmt.Println("Could not connect to database")
-		return
+		return errors.New("payments.savePainTransaction: " + err.Error())
 	}
 	// Prepare statement for inserting data
 	insertStatement := "INSERT INTO transactions (`transaction`, `type`, `senderAccountNumber`, `senderBankNumber`, `receiverAccountNumber`, `receiverBankNumber`, `transactionAmount`, `feeAmount`, `timestamp`) "
 	insertStatement += "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
 	stmtIns, err := db.Prepare(insertStatement)
 	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
+		return errors.New("payments.savePainTransaction: " + err.Error())
 	}
 	defer stmtIns.Close() // Close the statement when we leave main() / the program terminates
 
@@ -57,19 +40,17 @@ func savePainTransaction(transaction PAINTrans) {
 		transaction.Amount, feeAmount, sqlTime)
 
 	if err != nil {
-		fmt.Println("Could not save results: " + err.Error())
+		return errors.New("payments.savePainTransaction: " + err.Error())
 	}
 	defer db.Close()
+
+	return
 }
 
 //func updateAccounts(sender AccountHolder, receiver AccountHolder, transactionAmount float64, transactionFee float64) {
-func updateAccounts(transaction PAINTrans) (result string) {
+func updateAccounts(transaction PAINTrans) (err error) {
 	t := time.Now()
 	sqlTime := int32(t.Unix())
-
-	// Update sender account
-	fmt.Println("Processing transaction...")
-	fmt.Println(transaction)
 
 	// The feePerc is a percentage, convert to amount
 	feeAmount := transaction.Amount * transaction.Fee
@@ -77,29 +58,33 @@ func updateAccounts(transaction PAINTrans) (result string) {
 	switch transaction.PainType {
 	// Payment
 	case 1:
-		result = processCreditInitiation(transaction, sqlTime, feeAmount)
+		err = processCreditInitiation(transaction, sqlTime, feeAmount)
+		if err != nil {
+			return errors.New("payments.updateAccounts: " + err.Error())
+		}
 		break
 	// Deposit
 	case 1000:
-		result = processDepositInitiation(transaction, sqlTime, feeAmount)
+		err = processDepositInitiation(transaction, sqlTime, feeAmount)
+		if err != nil {
+			return errors.New("payments.updateAccounts: " + err.Error())
+		}
 		break
 	}
 
-	resBankUpdate := updateBankHoldingAccount(feeAmount, sqlTime)
-	if !resBankUpdate {
-		result = "0~Could not update bank account"
-		return
+	err = updateBankHoldingAccount(feeAmount, sqlTime)
+	if err != nil {
+		return errors.New("payments.updateAccounts: " + err.Error())
 	}
 
 	return
 
 }
 
-func updateBankHoldingAccount(feeAmount float64, sqlTime int32) (result bool) {
+func updateBankHoldingAccount(feeAmount float64, sqlTime int32) (err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		fmt.Println("Could not connect to database")
-		return
+		return errors.New("payments.updateBankHoldingAccount: " + err.Error())
 	}
 
 	// Add fees to bank holding account
@@ -108,55 +93,51 @@ func updateBankHoldingAccount(feeAmount float64, sqlTime int32) (result bool) {
 	updateBank := "UPDATE `bank_account` SET `balance` = (`balance` + ?), `timestamp` = ?"
 	stmtUpdBank, err := db.Prepare(updateBank)
 	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
+		return errors.New("payments.updateBankHoldingAccount: " + err.Error())
 	}
 	defer stmtUpdBank.Close() // Close the statement when we leave main() / the program terminates
 
 	_, err = stmtUpdBank.Exec(feeAmount, sqlTime)
 
 	if err != nil {
-		fmt.Println("Could not save results: " + err.Error())
+		return errors.New("payments.updateBankHoldingAccount: " + err.Error())
 	}
 	defer db.Close()
 	return
 }
 
 // @TODO Look at using accounts.getAccountDetails here
-func checkBalance(account AccountHolder) (balance float64) {
+func checkBalance(account AccountHolder) (balance float64, err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		fmt.Println("Could not connect to database")
-		return
+		return 0., errors.New("payments.checkBalance: " + err.Error())
 	}
 
 	rows, err := db.Query("SELECT `availableBalance` FROM `accounts` WHERE `accountNumber` = ?", account.AccountNumber)
 	if err != nil {
-		fmt.Println("Error with select query: " + err.Error())
+		return 0., errors.New("payments.checkBalance: " + err.Error())
 	}
 	defer rows.Close()
 
 	count := 0
 	for rows.Next() {
 		if err := rows.Scan(&balance); err != nil {
-			//@TODO Throw error
-			fmt.Println("ERROR: Could not retrieve account details")
-			return
+			return 0., errors.New("payments.checkBalance: Could not retrieve account details. " + err.Error())
 		}
 		count++
 	}
 
 	if count > 1 {
-		fmt.Println("ERROR: More than one account found with uuid")
+		return 0., errors.New("payments.checkBalance: More than one account found with uuid")
 	}
 
 	return
 }
 
-func processCreditInitiation(transaction PAINTrans, sqlTime int32, feeAmount float64) (result string) {
+func processCreditInitiation(transaction PAINTrans, sqlTime int32, feeAmount float64) (err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		fmt.Println("Could not connect to database")
-		return
+		return errors.New("payments.processCreditInitiation: " + err.Error())
 	}
 
 	// Only update if account local
@@ -165,9 +146,7 @@ func processCreditInitiation(transaction PAINTrans, sqlTime int32, feeAmount flo
 		updateSenderStatement := "UPDATE accounts SET `accountBalance` = (`accountBalance` - ?), `availableBalance` = (`availableBalance` - ?), `timestamp` = ? WHERE `accountNumber` = ? "
 		stmtUpdSender, err := db.Prepare(updateSenderStatement)
 		if err != nil {
-			//panic(err.Error()) // proper error handling instead of panic in your app
-			result = "0~Could not save payment"
-			return
+			return errors.New("payments.processCreditInitiation: " + err.Error())
 		}
 		defer stmtUpdSender.Close() // Close the statement when we leave main() / the program terminates
 
@@ -175,12 +154,9 @@ func processCreditInitiation(transaction PAINTrans, sqlTime int32, feeAmount flo
 		fmt.Println(resUpd)
 
 		if err != nil {
-			fmt.Println("Could not save results: " + err.Error())
-			result = "0~Could not process payment"
-			return
+			return errors.New("payments.processCreditInitiation: " + err.Error())
 		}
 
-		result = "1~Payment processed"
 	} else {
 		// Drop onto ledger
 	}
@@ -192,14 +168,14 @@ func processCreditInitiation(transaction PAINTrans, sqlTime int32, feeAmount flo
 		updateStatementReceiver := "UPDATE accounts SET `accountBalance` = (`accountBalance` + ?), `availableBalance` = (`availableBalance` + ?), `timestamp` = ? WHERE `accountNumber` = ? "
 		stmtUpdReceiver, err := db.Prepare(updateStatementReceiver)
 		if err != nil {
-			panic(err.Error()) // proper error handling instead of panic in your app
+			return errors.New("payments.processCreditInitiation: " + err.Error())
 		}
 		defer stmtUpdReceiver.Close() // Close the statement when we leave main() / the program terminates
 
 		_, err = stmtUpdReceiver.Exec(transaction.Amount, transaction.Amount, sqlTime, transaction.Receiver.AccountNumber)
 
 		if err != nil {
-			fmt.Println("Could not save results: " + err.Error())
+			return errors.New("payments.processCreditInitiation: " + err.Error())
 		}
 	} else {
 		// Drop onto ledger
@@ -207,11 +183,10 @@ func processCreditInitiation(transaction PAINTrans, sqlTime int32, feeAmount flo
 	return
 }
 
-func processDepositInitiation(transaction PAINTrans, sqlTime int32, feeAmount float64) (result string) {
+func processDepositInitiation(transaction PAINTrans, sqlTime int32, feeAmount float64) (err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		fmt.Println("Could not connect to database")
-		return
+		return errors.New("payments.processDepositInitiation: " + err.Error())
 	}
 
 	// We don't update sender as it is deposit
@@ -224,22 +199,15 @@ func processDepositInitiation(transaction PAINTrans, sqlTime int32, feeAmount fl
 		updateStatementReceiver := "UPDATE accounts SET `accountBalance` = (`accountBalance` + ?), `availableBalance` = (`availableBalance` + ?), `timestamp` = ? WHERE `accountNumber` = ? "
 		stmtUpdReceiver, err := db.Prepare(updateStatementReceiver)
 		if err != nil {
-			//panic(err.Error()) // proper error handling instead of panic in your app
-			result = "0~Could not save deposit"
-			return
+			return errors.New("payments.processDepositInitiation: " + err.Error())
 		}
 		defer stmtUpdReceiver.Close() // Close the statement when we leave main() / the program terminates
 
 		_, err = stmtUpdReceiver.Exec(depositTransactionAmount, depositTransactionAmount, sqlTime, transaction.Receiver.AccountNumber)
 
 		if err != nil {
-			fmt.Println("Could not save results: " + err.Error())
-
-			result = "0~Deposit not successful"
-			return
+			return errors.New("payments.processDepositInitiation: " + err.Error())
 		}
-
-		result = "1~Successful deposit"
 	} else {
 		// Drop onto ledger
 	}
