@@ -1,3 +1,4 @@
+![Bank logo](https://ksred.me/bank.png)
 # Banking infrastructure built using Go
 _Core banking in Golang_
 
