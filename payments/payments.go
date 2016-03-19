@@ -21,12 +21,11 @@ Payments mandates:
 */
 
 import (
-	"fmt"
-	"github.com/ksred/bank/appauth"
-	"log"
-	"os"
+	"errors"
 	"strconv"
 	"strings"
+
+	"github.com/ksred/bank/appauth"
 )
 
 const TRANSACTION_FEE = 0.0001 // 0.01%
@@ -45,134 +44,149 @@ type PAINTrans struct {
 	Fee      float64
 }
 
-func main() {
-}
-
-func CheckPayment() {
-	fmt.Println("Payment Check")
-}
-
-func ProcessPAIN(data []string) (result string) {
-	fmt.Println("Validating PAIN ... ")
-
+func ProcessPAIN(data []string) (result string, err error) {
 	//There must be at least 3 elements
 	if len(data) < 3 {
-		fmt.Println("ERROR: Not all data is present. Run pain~help to check for needed PAIN data")
-		os.Exit(1)
+		return "", errors.New("payments.ProcessPAIN: Not all data is present. Run pain~help to check for needed PAIN data")
 	}
 
 	// Get type
 	painType, err := strconv.ParseInt(data[2], 10, 64)
 	if err != nil {
-		fmt.Println("Could not get type of PAIN transaction")
-		log.Fatal(err)
-		return
+		return "", errors.New("payments.ProcessPAIN: Could not get type of PAIN transaction. " + err.Error())
 	}
 
 	switch painType {
 	case 1:
 		//There must be at least 6 elements
 		if len(data) < 6 {
-			fmt.Println("ERROR: Not all data is present. Run pain~help to check for needed PAIN data")
-			os.Exit(1)
+			return "", errors.New("payments.ProcessPAIN: Not all data is present. Run pain~help to check for needed PAIN data")
 		}
 
-		result = painCreditTransferInitiation(painType, data)
+		result, err = painCreditTransferInitiation(painType, data)
+		if err != nil {
+			return "", err
+		}
 		break
 	case 1000:
 		//There must be at least 4 elements
 		//token~pain~type~amount
 		if len(data) < 5 {
-			fmt.Println("ERROR: Not all data is present. Run pain~help to check for needed PAIN data")
-			os.Exit(1)
+			return "", errors.New("payments.ProcessPAIN: Not all data is present. Run pain~help to check for needed PAIN data")
 		}
-		result = customerDepositInitiation(painType, data)
+		result, err = customerDepositInitiation(painType, data)
+		if err != nil {
+			return "", err
+		}
 		break
 	}
 
 	return
 }
 
-func painCreditTransferInitiation(painType int64, data []string) (result string) {
+func painCreditTransferInitiation(painType int64, data []string) (result string, err error) {
 
 	// Validate input
-	sender := parseAccountHolder(data[3])
-	receiver := parseAccountHolder(data[4])
+	sender, err := parseAccountHolder(data[3])
+	if err != nil {
+		return "", err
+	}
+	receiver, err := parseAccountHolder(data[4])
+	if err != nil {
+		return "", err
+	}
+
 	trAmt := strings.TrimRight(data[5], "\x00")
 	transactionAmount, err := strconv.ParseFloat(trAmt, 64)
 	if err != nil {
-		fmt.Println("ERROR: Could not convert transaction amount to float64")
-		//log.Fatal(err)
-		return
+		return "", errors.New("payments.painCreditTransferInitiation: Could not convert transaction amount to float64. " + err.Error())
 	}
 
 	// Check if sender valid
-	tokenUser := appauth.GetUserFromToken(data[0])
+	tokenUser, err := appauth.GetUserFromToken(data[0])
+	if err != nil {
+		return "", errors.New("payments.painCreditTransferInitiation: " + err.Error())
+	}
 	if tokenUser != sender.AccountNumber {
-		result = "0~Sender not valid"
-		return
+		return "", errors.New("payments.painCreditTransferInitiation: Sender not valid")
 	}
 
 	transaction := PAINTrans{painType, sender, receiver, transactionAmount, TRANSACTION_FEE}
 
 	// Checks for transaction (avail balance, accounts open, etc)
-	balanceAvailable := checkBalance(transaction.Sender)
+	balanceAvailable, err := checkBalance(transaction.Sender)
+	if err != nil {
+		return "", errors.New("payments.painCreditTransferInitiation: " + err.Error())
+	}
 	if balanceAvailable < transaction.Amount {
-		fmt.Println("ERROR: Insufficient funds available")
-		result = "0~Insufficient funds"
-		return
+		return "", errors.New("payments.painCreditTransferInitiation: Insufficient funds available")
 	}
 
 	// Save transaction
-	result = processPAINTransaction(transaction)
+	result, err = processPAINTransaction(transaction)
+	if err != nil {
+		return "", err
+	}
 
 	return
 }
 
-func processPAINTransaction(transaction PAINTrans) (res string) {
-	fmt.Printf("Process transaction %v", transaction)
+func processPAINTransaction(transaction PAINTrans) (result string, err error) {
 	// Test: pain~1~1b2ca241-0373-4610-abad-da7b06c50a7b@~181ac0ae-45cb-461d-b740-15ce33e4612f@~20
+
 	// Save in transaction table
-	savePainTransaction(transaction)
+	err = savePainTransaction(transaction)
+	if err != nil {
+		return "", err
+	}
+
 	// Amend sender and receiver accounts
 	// Amend bank's account with fee addition
-	updateAccounts(transaction)
+	err = updateAccounts(transaction)
+	if err != nil {
+		return "", err
+	}
 
-	res = "true"
 	return
-
 }
 
-func parseAccountHolder(account string) (accountHolder AccountHolder) {
+func parseAccountHolder(account string) (accountHolder AccountHolder, err error) {
 	accountStr := strings.Split(account, "@")
 
 	if len(accountStr) < 2 {
-		fmt.Println("ERROR: Could not parse account holders")
-		return
+		return AccountHolder{}, errors.New("payments.parseAccountHolder: Insufficient funds available")
 	}
 
 	accountHolder = AccountHolder{accountStr[0], accountStr[1]}
 	return
 }
 
-func customerDepositInitiation(painType int64, data []string) (result string) {
+func customerDepositInitiation(painType int64, data []string) (result string, err error) {
 	// Validate input
 	// Sender is bank
-	sender := parseAccountHolder("0@0")
-	receiver := parseAccountHolder(data[3])
+	sender, err := parseAccountHolder("0@0")
+	if err != nil {
+		return "", err
+	}
+
+	receiver, err := parseAccountHolder(data[3])
+	if err != nil {
+		return "", err
+	}
+
 	trAmt := strings.TrimRight(data[4], "\x00")
 	transactionAmount, err := strconv.ParseFloat(trAmt, 64)
 	if err != nil {
-		fmt.Println("ERROR: Could not convert transaction amount to float64")
-		//log.Fatal(err)
-		return
+		return "", errors.New("payments.customerDepositInitiation: Could not convert transaction amount to float64. " + err.Error())
 	}
 
 	// Check if sender valid
-	tokenUser := appauth.GetUserFromToken(data[0])
+	tokenUser, err := appauth.GetUserFromToken(data[0])
+	if err != nil {
+		return "", errors.New("payments.customerDepositInitiation: " + err.Error())
+	}
 	if tokenUser != receiver.AccountNumber {
-		result = "0~Sender not valid"
-		return
+		return "", errors.New("payments.customerDepositInitiation: Sender not valid")
 	}
 
 	// Issue deposit
@@ -180,7 +194,10 @@ func customerDepositInitiation(painType int64, data []string) (result string) {
 	// immediate approval below a certain amount subject to rate limiting
 	transaction := PAINTrans{painType, sender, receiver, transactionAmount, TRANSACTION_FEE}
 	// Save transaction
-	result = processPAINTransaction(transaction)
+	result, err = processPAINTransaction(transaction)
+	if err != nil {
+		return "", err
+	}
 
 	return
 }
