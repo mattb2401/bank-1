@@ -3,7 +3,6 @@ package accounts
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -119,12 +118,21 @@ func ProcessAccount(data []string) (result string, err error) {
 		   The differences between AccountOpeningInstructionV05 and AccountOpeningRequestV02 will be explored in detail, for now we treat the same - open an account
 		*/
 		result, err = openAccount(data)
+		if err != nil {
+			return "", errors.New("accounts.ProcessAccount: " + err.Error())
+		}
 		break
 	case 1000:
 		result, err = fetchAccounts(data)
+		if err != nil {
+			return "", errors.New("accounts.ProcessAccount: " + err.Error())
+		}
 		break
 	case 1001:
 		result, err = fetchSingleAccount(data)
+		if err != nil {
+			return "", errors.New("accounts.ProcessAccount: " + err.Error())
+		}
 		break
 	case 1002:
 		if len(data) < 3 {
@@ -132,6 +140,9 @@ func ProcessAccount(data []string) (result string, err error) {
 			return
 		}
 		result, err = fetchSingleAccountByID(data)
+		if err != nil {
+			return "", errors.New("accounts.ProcessAccount: " + err.Error())
+		}
 		break
 	default:
 		err = errors.New("accounts.ProcessAccount: ACMT transaction code invalid")
@@ -154,11 +165,10 @@ func openAccount(data []string) (result string, err error) {
 	// Check if account already exists, check on ID number
 	accountHolder, err := getAccountMeta(data[6])
 	if err != nil {
-		return
+		return "", errors.New("accounts.openAccount: " + err.Error())
 	}
-	fmt.Println(accountHolder)
 	if accountHolder.AccountNumber != "" {
-		return "", errors.New("accounts.openAccount" + accountHolder.AccountNumber + "~Account already open")
+		return "", errors.New("accounts.openAccount" + accountHolder.AccountNumber)
 	}
 
 	// @FIXME: Remove new line from data
@@ -167,19 +177,18 @@ func openAccount(data []string) (result string, err error) {
 	// Create account
 	accountHolderObject, err := setAccountDetails(data)
 	if err != nil {
-		return "", err
+		return "", errors.New("accounts.openAccount: " + err.Error())
 	}
 	accountHolderDetailsObject, err := setAccountHolderDetails(data)
 	if err != nil {
-		return "", err
+		return "", errors.New("accounts.openAccount: " + err.Error())
 	}
-	createdAccountHolder, err := createAccount(accountHolderObject, accountHolderDetailsObject)
+	err = createAccount(&accountHolderObject, &accountHolderDetailsObject)
 	if err != nil {
-		return "", err
+		return "", errors.New("accounts.openAccount: " + err.Error())
 	}
 
-	fmt.Println(createdAccountHolder)
-	result = createdAccountHolder.AccountNumber
+	result = accountHolderObject.AccountNumber
 	return
 }
 
@@ -232,34 +241,37 @@ func fetchAccounts(data []string) (result string, err error) {
 	// Fetch all accounts. This fetches non-sensitive information (no balances)
 	accounts, err := getAllAccountDetails()
 	if err != nil {
-		return
+		return "", errors.New("accounts.fetchAccounts: " + err.Error())
 	}
 
 	// Parse into nice result string
 	jsonAccounts, err := json.Marshal(accounts)
 	if err != nil {
-		return "", err
+		return "", errors.New("accounts.fetchAccounts: " + err.Error())
 	}
 
-	result = "1~" + string(jsonAccounts)
+	result = string(jsonAccounts)
 	return
 }
 
 func fetchSingleAccount(data []string) (result string, err error) {
 	// Fetch user account. Must be user logged in
-	tokenUser := appauth.GetUserFromToken(data[0])
+	tokenUser, err := appauth.GetUserFromToken(data[0])
+	if err != nil {
+		return "", errors.New("accounts.fetchSingleAccount: " + err.Error())
+	}
 	account, err := getSingleAccountDetail(tokenUser)
 	if err != nil {
-		return
+		return "", errors.New("accounts.fetchSingleAccount: " + err.Error())
 	}
 
 	// Parse into nice result string
 	jsonAccount, err := json.Marshal(account)
 	if err != nil {
-		return "", err
+		return "", errors.New("accounts.fetchSingleAccount: " + err.Error())
 	}
 
-	result = "1~" + string(jsonAccount)
+	result = string(jsonAccount)
 	return
 }
 
@@ -269,7 +281,7 @@ func fetchSingleAccountByID(data []string) (result string, err error) {
 
 	userAccountNumber, err := getSingleAccountNumberByID(userID)
 	if err != nil {
-		return
+		return "", errors.New("accounts.fetchSingleAccountByID: " + err.Error())
 	}
 
 	result = userAccountNumber

@@ -36,33 +36,33 @@ func loadDatabase() (db *sql.DB, err error) {
 	return
 }
 
-func createAccount(accountDetails AccountDetails, accountHolderDetails AccountHolderDetails) (AccountDetails AccountDetails, err error) {
+func createAccount(accountDetails *AccountDetails, accountHolderDetails *AccountHolderDetails) (err error) {
 	// Convert variables
 	t := time.Now()
 	sqlTime := int32(t.Unix())
 
-	err = doCreateAccount(sqlTime, &accountDetails)
+	err = doCreateAccount(sqlTime, accountDetails)
 	if err != nil {
-		return
+		return errors.New("accounts.createAccount: " + err.Error())
 	}
 
-	err = doCreateAccountMeta(sqlTime, &accountHolderDetails, &accountDetails)
+	err = doCreateAccountMeta(sqlTime, accountHolderDetails, accountDetails)
 	if err != nil {
-		return
+		return errors.New("accounts.createAccount: " + err.Error())
 	}
 
 	return
 }
 
-func deleteAccount(accountDetails AccountDetails, accountHolderDetails AccountHolderDetails) (result bool, err error) {
+func deleteAccount(accountDetails AccountDetails, accountHolderDetails AccountHolderDetails) (err error) {
 	err = doDeleteAccount(&accountDetails)
 	if err != nil {
-		return
+		return errors.New("accounts.deleteAccount: " + err.Error())
 	}
 
 	err = doDeleteAccountMeta(&accountHolderDetails, &accountDetails)
 	if err != nil {
-		return
+		return errors.New("accounts.deleteAccount: " + err.Error())
 	}
 
 	return
@@ -71,14 +71,14 @@ func deleteAccount(accountDetails AccountDetails, accountHolderDetails AccountHo
 func doCreateAccount(sqlTime int32, accountDetails *AccountDetails) (err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		return
+		return errors.New("accounts.doCreateAccount: " + err.Error())
 	}
 	// Create account
 	insertStatement := "INSERT INTO accounts (`accountNumber`, `bankNumber`, `accountHolderName`, `accountBalance`, `overdraft`, `availableBalance`, `timestamp`) "
 	insertStatement += "VALUES(?, ?, ?, ?, ?, ?, ?)"
 	stmtIns, err := db.Prepare(insertStatement)
 	if err != nil {
-		return
+		return errors.New("accounts.doCreateAccount: " + err.Error())
 	}
 
 	// Prepare statement for inserting data
@@ -90,7 +90,7 @@ func doCreateAccount(sqlTime int32, accountDetails *AccountDetails) (err error) 
 
 	_, err = stmtIns.Exec(accountDetails.AccountNumber, accountDetails.BankNumber, accountDetails.AccountHolderName, accountDetails.AccountBalance, accountDetails.Overdraft, accountDetails.AvailableBalance, sqlTime)
 	if err != nil {
-		return
+		return errors.New("accounts.doCreateAccount: " + err.Error())
 	}
 	return
 }
@@ -98,13 +98,13 @@ func doCreateAccount(sqlTime int32, accountDetails *AccountDetails) (err error) 
 func doDeleteAccount(accountDetails *AccountDetails) (err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		return
+		return errors.New("accounts.doDeleteAccount: " + err.Error())
 	}
 	// Create account
 	deleteStatement := "DELETE FROM accounts WHERE `accountNumber` = ? AND `bankNumber` = ? AND `accountHolderName` = ? "
 	stmtDel, err := db.Prepare(deleteStatement)
 	if err != nil {
-		return
+		return errors.New("accounts.doDeleteAccount: " + err.Error())
 	}
 
 	// Prepare statement for inserting data
@@ -112,7 +112,7 @@ func doDeleteAccount(accountDetails *AccountDetails) (err error) {
 
 	_, err = stmtDel.Exec(accountDetails.AccountNumber, accountDetails.BankNumber, accountDetails.AccountHolderName)
 	if err != nil {
-		return
+		return errors.New("accounts.doDeleteAccount: " + err.Error())
 	}
 	// Can use db.RowsAffected() to check
 	return
@@ -121,14 +121,14 @@ func doDeleteAccount(accountDetails *AccountDetails) (err error) {
 func doCreateAccountMeta(sqlTime int32, accountHolderDetails *AccountHolderDetails, accountDetails *AccountDetails) (err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		return
+		return errors.New("accounts.doCreateAccountMeta: " + err.Error())
 	}
 	// Create account meta
 	insertStatement := "INSERT INTO accounts_meta (`accountNumber`, `bankNumber`, `accountHolderGivenName`, `accountHolderFamilyName`, `accountHolderDateOfBirth`, `accountHolderIdentificationNumber`, `accountHolderContactNumber1`, `accountHolderContactNumber2`, `accountHolderEmailAddress`, `accountHolderAddressLine1`, `accountHolderAddressLine2`, `accountHolderAddressLine3`, `accountHolderPostalCode`, `timestamp`) "
 	insertStatement += "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 	stmtIns, err := db.Prepare(insertStatement)
 	if err != nil {
-		return
+		return errors.New("accounts.doCreateAccountMeta: " + err.Error())
 	}
 	defer stmtIns.Close() // Close the statement when we leave main() / the program terminates
 
@@ -138,7 +138,7 @@ func doCreateAccountMeta(sqlTime int32, accountHolderDetails *AccountHolderDetai
 		accountHolderDetails.PostalCode, sqlTime)
 
 	if err != nil {
-		return
+		return errors.New("accounts.doCreateAccountMeta: " + err.Error())
 	}
 
 	defer db.Close()
@@ -149,13 +149,13 @@ func doCreateAccountMeta(sqlTime int32, accountHolderDetails *AccountHolderDetai
 func doDeleteAccountMeta(accountHolderDetails *AccountHolderDetails, accountDetails *AccountDetails) (err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		return
+		return errors.New("accounts.doDeleteAccountMeta: " + err.Error())
 	}
 	// Create account meta
 	deleteStatement := "DELETE FROM accounts_meta WHERE `accountNumber` = ? AND `bankNumber` = ? AND `accountHolderGivenName` = ? AND `accountHolderFamilyName` = ? AND `accountHolderDateOfBirth` = ? AND `accountHolderIdentificationNumber` = ? AND `accountHolderContactNumber1` = ? AND `accountHolderContactNumber2` = ? AND `accountHolderEmailAddress` = ? AND `accountHolderAddressLine1` = ? AND `accountHolderAddressLine2` = ? AND `accountHolderAddressLine3` = ? AND `accountHolderPostalCode` = ? "
 	stmtDel, err := db.Prepare(deleteStatement)
 	if err != nil {
-		return
+		return errors.New("accounts.doDeleteAccountMeta: " + err.Error())
 	}
 	defer stmtDel.Close() // Close the statement when we leave main() / the program terminates
 
@@ -165,7 +165,7 @@ func doDeleteAccountMeta(accountHolderDetails *AccountHolderDetails, accountDeta
 		accountHolderDetails.PostalCode)
 
 	if err != nil {
-		return
+		return errors.New("accounts.doDeleteAccountMeta: " + err.Error())
 	}
 
 	defer db.Close()
@@ -176,12 +176,12 @@ func doDeleteAccountMeta(accountHolderDetails *AccountHolderDetails, accountDeta
 func getAccountDetails(id string) (accountDetails AccountDetails, err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		return
+		return AccountDetails{}, errors.New("accounts.getAccountDetails: " + err.Error())
 	}
 
 	rows, err := db.Query("SELECT `accountNumber`, `bankNumber`, `accountHolderName`, `accountBalance`, `overdraft`, `availableBalance` FROM `accounts` WHERE `accountNumber` = ?", id)
 	if err != nil {
-		return
+		return AccountDetails{}, errors.New("accounts.getAccountDetails: " + err.Error())
 	}
 	defer rows.Close()
 
@@ -195,12 +195,12 @@ func getAccountDetails(id string) (accountDetails AccountDetails, err error) {
 	}
 
 	if count == 0 {
-		return AccountDetails{}, errors.New("Account not found")
+		return AccountDetails{}, errors.New("accounts.getAccountDetails: Account not found")
 	}
 
 	if count > 1 {
 		//@TODO: Allow user to have multiple accounts
-		return AccountDetails{}, errors.New("More than one account found")
+		return AccountDetails{}, errors.New("accounts.getAccountDetails: More than one account found")
 	}
 
 	return
@@ -209,12 +209,12 @@ func getAccountDetails(id string) (accountDetails AccountDetails, err error) {
 func getAccountMeta(id string) (accountDetails AccountHolderDetails, err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		return
+		return AccountHolderDetails{}, errors.New("accounts.getAccountMeta: " + err.Error())
 	}
 
 	rows, err := db.Query("SELECT `accountNumber`, `bankNumber`, `accountHolderGivenName`, `accountHolderFamilyName`, `accountHolderDateOfBirth`, `accountHolderIdentificationNumber`, `accountHolderContactNumber1`, `accountHolderContactNumber2`, `accountHolderEmailAddress`, `accountHolderAddressLine1`, `accountHolderAddressLine2`, `accountHolderAddressLine3`, `accountHolderPostalCode` FROM `accounts_meta` WHERE `accountHolderIdentificationNumber` = ?", id)
 	if err != nil {
-		return
+		return AccountHolderDetails{}, errors.New("accounts.getAccountMeta: " + err.Error())
 	}
 	defer rows.Close()
 
@@ -229,12 +229,12 @@ func getAccountMeta(id string) (accountDetails AccountHolderDetails, err error) 
 	}
 
 	if count == 0 {
-		return AccountHolderDetails{}, errors.New("Account not found")
+		return AccountHolderDetails{}, errors.New("accounts.getAccountMeta: Account not found")
 	}
 
 	if count > 1 {
 		//@TODO: Allow user to have multiple accounts
-		return AccountHolderDetails{}, errors.New("More than one account found")
+		return AccountHolderDetails{}, errors.New("accounts.getAccountMeta: More than one account found")
 	}
 
 	return
@@ -243,12 +243,12 @@ func getAccountMeta(id string) (accountDetails AccountHolderDetails, err error) 
 func getAllAccountDetails() (allAccounts []AccountDetails, err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		return
+		return []AccountDetails{}, errors.New("accounts.getAllAccountDetails: More than one account found")
 	}
 
 	rows, err := db.Query("SELECT `accountNumber`, `bankNumber`, `accountHolderName` FROM `accounts`")
 	if err != nil {
-		return
+		return []AccountDetails{}, errors.New("accounts.getAllAccountDetails: More than one account found")
 	}
 	defer rows.Close()
 
@@ -271,12 +271,12 @@ func getAllAccountDetails() (allAccounts []AccountDetails, err error) {
 func getSingleAccountDetail(accountNumber string) (account AccountDetails, err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		return
+		return AccountDetails{}, errors.New("accounts.getSingleAccountDetail: " + err.Error())
 	}
 
 	rows, err := db.Query("SELECT `accountNumber`, `bankNumber`, `accountHolderName`, `accountBalance`, `overdraft`, `availableBalance` FROM `accounts` WHERE `accountNumber` = ?", accountNumber)
 	if err != nil {
-		return
+		return AccountDetails{}, errors.New("accounts.getSingleAccountDetail: " + err.Error())
 	}
 	defer rows.Close()
 
@@ -295,12 +295,12 @@ func getSingleAccountDetail(accountNumber string) (account AccountDetails, err e
 func getSingleAccountNumberByID(userID string) (accountID string, err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		return
+		return "", errors.New("accounts.getSingleAccountNumberByID: " + err.Error())
 	}
 
 	rows, err := db.Query("SELECT `accountNumber` FROM `accounts_meta` WHERE `accountHolderIdentificationNumber` = ?", userID)
 	if err != nil {
-		return
+		return "", errors.New("accounts.getSingleAccountNumberByID: " + err.Error())
 	}
 	defer rows.Close()
 

@@ -65,7 +65,7 @@ func ProcessPAIN(data []string) (result string, err error) {
 
 		result, err = painCreditTransferInitiation(painType, data)
 		if err != nil {
-			return "", err
+			return "", errors.New("payments.ProcessPAIN: " + err.Error())
 		}
 		break
 	case 1000:
@@ -76,7 +76,7 @@ func ProcessPAIN(data []string) (result string, err error) {
 		}
 		result, err = customerDepositInitiation(painType, data)
 		if err != nil {
-			return "", err
+			return "", errors.New("payments.ProcessPAIN: " + err.Error())
 		}
 		break
 	}
@@ -89,11 +89,11 @@ func painCreditTransferInitiation(painType int64, data []string) (result string,
 	// Validate input
 	sender, err := parseAccountHolder(data[3])
 	if err != nil {
-		return "", err
+		return "", errors.New("payments.painCreditTransferInitiation: " + err.Error())
 	}
 	receiver, err := parseAccountHolder(data[4])
 	if err != nil {
-		return "", err
+		return "", errors.New("payments.painCreditTransferInitiation: " + err.Error())
 	}
 
 	trAmt := strings.TrimRight(data[5], "\x00")
@@ -125,7 +125,7 @@ func painCreditTransferInitiation(painType int64, data []string) (result string,
 	// Save transaction
 	result, err = processPAINTransaction(transaction)
 	if err != nil {
-		return "", err
+		return "", errors.New("payments.painCreditTransferInitiation: " + err.Error())
 	}
 
 	return
@@ -137,14 +137,14 @@ func processPAINTransaction(transaction PAINTrans) (result string, err error) {
 	// Save in transaction table
 	err = savePainTransaction(transaction)
 	if err != nil {
-		return "", err
+		return "", errors.New("payments.processPAINTransaction: " + err.Error())
 	}
 
 	// Amend sender and receiver accounts
 	// Amend bank's account with fee addition
 	err = updateAccounts(transaction)
 	if err != nil {
-		return "", err
+		return "", errors.New("payments.processPAINTransaction: " + err.Error())
 	}
 
 	return
@@ -154,7 +154,7 @@ func parseAccountHolder(account string) (accountHolder AccountHolder, err error)
 	accountStr := strings.Split(account, "@")
 
 	if len(accountStr) < 2 {
-		return AccountHolder{}, errors.New("payments.parseAccountHolder: Insufficient funds available")
+		return AccountHolder{}, errors.New("payments.parseAccountHolder: Not all details present")
 	}
 
 	accountHolder = AccountHolder{accountStr[0], accountStr[1]}
@@ -166,12 +166,12 @@ func customerDepositInitiation(painType int64, data []string) (result string, er
 	// Sender is bank
 	sender, err := parseAccountHolder("0@0")
 	if err != nil {
-		return "", err
+		return "", errors.New("payments.CustomerDepositInitiation: " + err.Error())
 	}
 
 	receiver, err := parseAccountHolder(data[3])
 	if err != nil {
-		return "", err
+		return "", errors.New("payments.CustomerDepositInitiation: " + err.Error())
 	}
 
 	trAmt := strings.TrimRight(data[4], "\x00")
@@ -196,7 +196,7 @@ func customerDepositInitiation(painType int64, data []string) (result string, er
 	// Save transaction
 	result, err = processPAINTransaction(transaction)
 	if err != nil {
-		return "", err
+		return "", errors.New("payments.CustomerDepositInitiation: " + err.Error())
 	}
 
 	return
