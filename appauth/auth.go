@@ -116,6 +116,47 @@ func CreateUserPassword(user string, password string) (result string, err error)
 	return
 }
 
+func RemoveUserPassword(user string, hashedPassword string) (result string, err error) {
+	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
+	if err != nil {
+		return "", errors.New("appauth.RemoveUserPassword: Could not connect to database")
+	}
+
+	// Check for existing account
+	rows, err := db.Query("SELECT `accountNumber` FROM `accounts_auth` WHERE `accountNumber` = ?", user)
+	if err != nil {
+		return "", errors.New("appauth.RemoveUserPassword: Error with select query. " + err.Error())
+	}
+	defer rows.Close()
+
+	// @TODO Must be easy way to get row count returned
+	count := 0
+	for rows.Next() {
+		count++
+	}
+
+	if count == 0 {
+		return "", errors.New("appauth.RemoveUserPassword: Account auth does not exists")
+	}
+
+	// Prepare statement for inserting data
+	delStatement := "DELETE FROM accounts_auth WHERE `accountNumber` = ? AND `password` = ? "
+	stmtDel, err := db.Prepare(delStatement)
+	if err != nil {
+		return "", errors.New("appauth.RemoveUserPassword: Error with delete. " + err.Error())
+	}
+	defer stmtDel.Close() // Close the statement when we leave main() / the program terminates
+
+	_, err = stmtDel.Exec(user, hashedPassword)
+
+	if err != nil {
+		return "", errors.New("appauth.RemoveUserPassword: Could not delete account. " + err.Error())
+	}
+
+	result = "Successfully deleted account"
+	return
+}
+
 func CreateToken(user string, password string) (token string, err error) {
 	// Check if username and password match
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
@@ -165,6 +206,27 @@ func CreateToken(user string, password string) (token string, err error) {
 	return
 }
 
+func RemoveToken(token string) (result string, err error) {
+	//TEST 0~appauth~480e67e3-e2c9-48ee-966c-8d251474b669
+	client := redis.NewClient(&redis.Options{
+		Addr:     Config.RedisHost + ":" + Config.RedisPort,
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+	_, err = client.Del(token).Result()
+
+	if err == redis.Nil {
+		return "", errors.New("appauth.RemoveToken: Token not found. " + err.Error())
+	} else if err != nil {
+		return "", errors.New("appauth.RemoveToken: Could not remove token. " + err.Error())
+	} else {
+		result = "Token removed"
+	}
+
+	return
+}
+
 func CheckToken(token string) (result string, err error) {
 	//TEST 0~appauth~480e67e3-e2c9-48ee-966c-8d251474b669
 	client := redis.NewClient(&redis.Options{
@@ -192,7 +254,7 @@ func CheckToken(token string) (result string, err error) {
 	return
 }
 
-func GetUserFromToken(token string) (user string) {
+func GetUserFromToken(token string) (user string, err error) {
 	//TEST 0~appauth~~181ac0ae-45cb-461d-b740-15ce33e4612f~testPassword
 	client := redis.NewClient(&redis.Options{
 		Addr:     Config.RedisHost + ":" + Config.RedisPort,
@@ -200,16 +262,16 @@ func GetUserFromToken(token string) (user string) {
 		DB:       0,  // use default DB
 	})
 
-	user, err := client.Get(token).Result()
+	user, err = client.Get(token).Result()
 	if err != nil {
-		panic(err)
+		return "", errors.New("appauth.GetUserFromToken: Could not get token. " + err.Error())
 	}
 
 	// If valid then extend
 	if user != "" {
 		err := client.Set(user, token, TOKEN_TTL).Err()
 		if err != nil {
-			panic(err)
+			return "", errors.New("appauth.GetUserFromToken: Could not extend token. " + err.Error())
 		}
 	}
 
