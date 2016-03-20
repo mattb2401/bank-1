@@ -234,6 +234,7 @@ func setAccountHolderDetails(data []string) (accountHolderDetails AccountHolderD
 	return
 }
 
+// @TODO Remove this after testing, security risk
 func fetchAccounts(data []string) (result string, err error) {
 	// Fetch all accounts. This fetches non-sensitive information (no balances)
 	accounts, err := getAllAccountDetails()
