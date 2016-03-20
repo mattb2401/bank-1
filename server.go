@@ -126,7 +126,11 @@ func processCommand(text string) (result string, err error) {
 	command[len(command)-1] = string(bytes.Trim([]byte(command[len(command)-1]), "\x00"))
 
 	// Check application auth. This is always the first value, if no token a 0 is sent
-	if command[0] != "0" {
+	isCreateAccount := (command[0] == "0" && command[1] == "acmt" && command[2] == "1")
+	isLogIn := (command[0] == "0" && command[1] == "appauth" && command[2] == "2")
+	isCreateUserPassword := (command[0] == "0" && command[1] == "appauth" && command[2] == "3")
+
+	if !isCreateAccount || !isLogIn || !isCreateUserPassword {
 		err := appauth.CheckToken(command[0])
 		if err != nil {
 			return "", errors.New("server.processCommand: " + err.Error())
