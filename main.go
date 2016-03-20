@@ -31,6 +31,12 @@ func main() {
 
 func parseArguments(arg string) (err error) {
 	switch arg {
+	case "http":
+		err := RunHttpServer()
+		if err != nil {
+			log.Fatalf("Could not start HTTP server. " + err.Error())
+		}
+		break
 	case "client":
 		// Run client for bank system
 		runClient("tls")
@@ -42,19 +48,11 @@ func parseArguments(arg string) (err error) {
 	case "server":
 		// Run server for bank system
 		for {
-			err := RunHttpServer()
-			if err != nil {
-				log.Fatalf("Could not start HTTP server. " + err.Error())
-			}
 			runServer("tls")
 		}
 	case "serverNoTLS":
 		// Run server for bank system
 		for {
-			err := RunHttpServer()
-			if err != nil {
-				log.Fatalf("Could not start HTTP server. " + err.Error())
-			}
 			runServer("no-tls")
 		}
 	default:
