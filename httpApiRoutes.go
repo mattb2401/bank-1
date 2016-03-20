@@ -66,19 +66,19 @@ var routes = Routes{
 		"/account",
 		AccountCreate,
 	},
-	// Get single account
-	Route{
-		"AccountGet",
-		"GET",
-		"/account/{accountId}",
-		AccountGet,
-	},
 	// Get all accounts
 	Route{
 		"AccountGetAll",
 		"GET",
 		"/account/all",
 		AccountGetAll,
+	},
+	// Get single account
+	Route{
+		"AccountGet",
+		"GET",
+		"/account/{accountId}",
+		AccountGet,
 	},
 	// Payments
 	// Credit initiation

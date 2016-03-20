@@ -49,8 +49,8 @@ func AuthIndex(w http.ResponseWriter, r *http.Request) {
 
 // Get token
 func AuthLogin(w http.ResponseWriter, r *http.Request) {
-	user := r.FormValue("user")
-	password := r.FormValue("password")
+	user := r.FormValue("User")
+	password := r.FormValue("Password")
 
 	response, err := appauth.ProcessAppAuth([]string{"0", "appauth", "2", user, password})
 	Response(response, err, w, r)
@@ -59,8 +59,8 @@ func AuthLogin(w http.ResponseWriter, r *http.Request) {
 
 // Create auth account
 func AuthCreate(w http.ResponseWriter, r *http.Request) {
-	user := r.FormValue("user")
-	password := r.FormValue("password")
+	user := r.FormValue("User")
+	password := r.FormValue("Password")
 
 	response, err := appauth.ProcessAppAuth([]string{"0", "appauth", "3", user, password})
 	Response(response, err, w, r)
@@ -75,10 +75,10 @@ func AuthRemove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := r.FormValue("user")
-	password := r.FormValue("password")
+	user := r.FormValue("User")
+	password := r.FormValue("Password")
 
-	response, err := appauth.ProcessAppAuth([]string{token, "appauth", "3", user, password})
+	response, err := appauth.ProcessAppAuth([]string{token, "appauth", "4", user, password})
 	Response(response, err, w, r)
 	return
 }
@@ -90,8 +90,9 @@ func AccountIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintln(w, "Account Index")
-	fmt.Printf(token)
+	response, err := accounts.ProcessAccount([]string{token, "acmt", "1001"})
+	Response(response, err, w, r)
+	return
 }
 
 func AccountCreate(w http.ResponseWriter, r *http.Request) {
@@ -139,8 +140,10 @@ func AccountGet(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	accountId := vars["accountId"]
-	fmt.Printf("Account ID: %s\n", accountId)
-	fmt.Printf(token)
+
+	response, err := accounts.ProcessAccount([]string{token, "acmt", "1002", accountId})
+	Response(response, err, w, r)
+	return
 }
 
 func AccountGetAll(w http.ResponseWriter, r *http.Request) {
@@ -149,9 +152,10 @@ func AccountGetAll(w http.ResponseWriter, r *http.Request) {
 		Response("", err, w, r)
 		return
 	}
-	fmt.Printf(token)
 
-	fmt.Fprintln(w, "Account Index")
+	response, err := accounts.ProcessAccount([]string{token, "acmt", "1000"})
+	Response(response, err, w, r)
+	return
 }
 
 func PaymentCreditInitiation(w http.ResponseWriter, r *http.Request) {

@@ -135,7 +135,7 @@ func ProcessAccount(data []string) (result string, err error) {
 		}
 		break
 	case 1002:
-		if len(data) < 3 {
+		if len(data) < 4 {
 			err = errors.New("accounts.ProcessAccount: Not all fields present")
 			return
 		}
@@ -273,8 +273,11 @@ func fetchSingleAccount(data []string) (result string, err error) {
 }
 
 func fetchSingleAccountByID(data []string) (result string, err error) {
-	// Format: appauth~1002~USERID
-	userID := data[2]
+	// Format: token~acmt~1002~USERID
+	userID := data[3]
+	if userID == "" {
+		return "", errors.New("accounts.fetchSingleAccountByID: User ID not present")
+	}
 
 	userAccountNumber, err := getSingleAccountNumberByID(userID)
 	if err != nil {
