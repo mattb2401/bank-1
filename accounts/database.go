@@ -313,5 +313,9 @@ func getSingleAccountNumberByID(userID string) (accountID string, err error) {
 		count++
 	}
 
+	if count == 0 {
+		return "", errors.New("accounts.getSingleAccountNumberByID: Account not found")
+	}
+
 	return
 }

@@ -3,7 +3,6 @@ package payments
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -88,7 +87,6 @@ func updateBankHoldingAccount(feeAmount float64, sqlTime int32) (err error) {
 	}
 
 	// Add fees to bank holding account
-	fmt.Println("   Processing bank...")
 	// Only one row in this account for now - only holds single holding bank's balance
 	updateBank := "UPDATE `bank_account` SET `balance` = (`balance` + ?), `timestamp` = ?"
 	stmtUpdBank, err := db.Prepare(updateBank)
@@ -142,7 +140,6 @@ func processCreditInitiation(transaction PAINTrans, sqlTime int32, feeAmount flo
 
 	// Only update if account local
 	if transaction.Sender.BankNumber == "" {
-		fmt.Println("   Processing sender...")
 		updateSenderStatement := "UPDATE accounts SET `accountBalance` = (`accountBalance` - ?), `availableBalance` = (`availableBalance` - ?), `timestamp` = ? WHERE `accountNumber` = ? "
 		stmtUpdSender, err := db.Prepare(updateSenderStatement)
 		if err != nil {
@@ -150,8 +147,7 @@ func processCreditInitiation(transaction PAINTrans, sqlTime int32, feeAmount flo
 		}
 		defer stmtUpdSender.Close() // Close the statement when we leave main() / the program terminates
 
-		resUpd, err := stmtUpdSender.Exec(transaction.Amount+feeAmount, transaction.Amount+feeAmount, sqlTime, transaction.Sender.AccountNumber)
-		fmt.Println(resUpd)
+		_, err = stmtUpdSender.Exec(transaction.Amount+feeAmount, transaction.Amount+feeAmount, sqlTime, transaction.Sender.AccountNumber)
 
 		if err != nil {
 			return errors.New("payments.processCreditInitiation: " + err.Error())
@@ -164,7 +160,6 @@ func processCreditInitiation(transaction PAINTrans, sqlTime int32, feeAmount flo
 	// Update receiver account
 	// Only update if account local
 	if transaction.Receiver.BankNumber == "" {
-		fmt.Println("   Processing receiver...")
 		updateStatementReceiver := "UPDATE accounts SET `accountBalance` = (`accountBalance` + ?), `availableBalance` = (`availableBalance` + ?), `timestamp` = ? WHERE `accountNumber` = ? "
 		stmtUpdReceiver, err := db.Prepare(updateStatementReceiver)
 		if err != nil {
@@ -195,7 +190,6 @@ func processDepositInitiation(transaction PAINTrans, sqlTime int32, feeAmount fl
 	depositTransactionAmount := transaction.Amount - feeAmount
 	// Only update if account local
 	if transaction.Receiver.BankNumber == "" {
-		fmt.Println("   Processing receiver...")
 		updateStatementReceiver := "UPDATE accounts SET `accountBalance` = (`accountBalance` + ?), `availableBalance` = (`availableBalance` + ?), `timestamp` = ? WHERE `accountNumber` = ? "
 		stmtUpdReceiver, err := db.Prepare(updateStatementReceiver)
 		if err != nil {

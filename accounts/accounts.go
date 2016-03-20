@@ -135,7 +135,7 @@ func ProcessAccount(data []string) (result string, err error) {
 		}
 		break
 	case 1002:
-		if len(data) < 3 {
+		if len(data) < 4 {
 			err = errors.New("accounts.ProcessAccount: Not all fields present")
 			return
 		}
@@ -163,12 +163,9 @@ func openAccount(data []string) (result string, err error) {
 
 	// Test: acmt~1~Kyle~Redelinghuys~19000101~190001011234098~1112223456~~email@domain.com~Physical Address 1~~~1000
 	// Check if account already exists, check on ID number
-	accountHolder, err := getAccountMeta(data[6])
-	if err != nil {
-		return "", errors.New("accounts.openAccount: " + err.Error())
-	}
+	accountHolder, _ := getAccountMeta(data[6])
 	if accountHolder.AccountNumber != "" {
-		return "", errors.New("accounts.openAccount" + accountHolder.AccountNumber)
+		return "", errors.New("accounts.openAccount: Account already open. " + accountHolder.AccountNumber)
 	}
 
 	// @FIXME: Remove new line from data
@@ -276,8 +273,11 @@ func fetchSingleAccount(data []string) (result string, err error) {
 }
 
 func fetchSingleAccountByID(data []string) (result string, err error) {
-	// Format: appauth~1002~USERID
-	userID := data[2]
+	// Format: token~acmt~1002~USERID
+	userID := data[3]
+	if userID == "" {
+		return "", errors.New("accounts.fetchSingleAccountByID: User ID not present")
+	}
 
 	userAccountNumber, err := getSingleAccountNumberByID(userID)
 	if err != nil {

@@ -11,15 +11,20 @@ const (
 	CONN_HOST = "localhost"
 	CONN_PORT = "3300"
 	CONN_TYPE = "tcp"
+	HTTP_PORT = "8443"
 )
 
 func main() {
 	argClientServer := os.Args[1]
 
-	err := parseArguments(argClientServer)
+	err := RunHttpServer()
+	if err != nil {
+		log.Fatalf("Could not start HTTP server. " + err.Error())
+	}
+
+	err = parseArguments(argClientServer)
 	if err != nil {
 		log.Fatalf("Error starting, err: %v\n", err)
-		os.Exit(1)
 	}
 	os.Exit(0)
 }
@@ -37,11 +42,19 @@ func parseArguments(arg string) (err error) {
 	case "server":
 		// Run server for bank system
 		for {
+			err := RunHttpServer()
+			if err != nil {
+				log.Fatalf("Could not start HTTP server. " + err.Error())
+			}
 			runServer("tls")
 		}
 	case "serverNoTLS":
 		// Run server for bank system
 		for {
+			err := RunHttpServer()
+			if err != nil {
+				log.Fatalf("Could not start HTTP server. " + err.Error())
+			}
 			runServer("no-tls")
 		}
 	default:
