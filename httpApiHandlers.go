@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/ksred/bank/accounts"
 	"github.com/ksred/bank/appauth"
+	"github.com/ksred/bank/payments"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -19,6 +20,12 @@ func getTokenFromHeader(w http.ResponseWriter, r *http.Request) (token string, e
 	token = r.Header.Get("X-Auth-Token")
 	if token == "" {
 		return "", errors.New("httpApiHandlers: Could not retrieve token from headers")
+	}
+
+	// Check token
+	err = appauth.CheckToken(token)
+	if err != nil {
+		return "", errors.New("httpApiHandlers: Token invalid")
 	}
 
 	return
@@ -145,4 +152,35 @@ func AccountGetAll(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf(token)
 
 	fmt.Fprintln(w, "Account Index")
+}
+
+func PaymentCreditInitiation(w http.ResponseWriter, r *http.Request) {
+	token, err := getTokenFromHeader(w, r)
+	if err != nil {
+		Response("", err, w, r)
+		return
+	}
+
+	senderDetails := r.FormValue("SenderDetails")
+	recipientDetails := r.FormValue("RecipientDetails")
+	amount := r.FormValue("Amount")
+
+	response, err := payments.ProcessPAIN([]string{token, "pain", "1", senderDetails, recipientDetails, amount})
+	Response(response, err, w, r)
+	return
+}
+
+func PaymentDepositInitiation(w http.ResponseWriter, r *http.Request) {
+	token, err := getTokenFromHeader(w, r)
+	if err != nil {
+		Response("", err, w, r)
+		return
+	}
+
+	accountDetails := r.FormValue("AccountDetails")
+	amount := r.FormValue("Amount")
+
+	response, err := payments.ProcessPAIN([]string{token, "pain", "1000", accountDetails, amount})
+	Response(response, err, w, r)
+	return
 }

@@ -165,7 +165,7 @@ func openAccount(data []string) (result string, err error) {
 	// Check if account already exists, check on ID number
 	accountHolder, _ := getAccountMeta(data[6])
 	if accountHolder.AccountNumber != "" {
-		return "", errors.New("accounts.openAccount" + accountHolder.AccountNumber)
+		return "", errors.New("accounts.openAccount: Account already open. " + accountHolder.AccountNumber)
 	}
 
 	// @FIXME: Remove new line from data

@@ -80,6 +80,21 @@ var routes = Routes{
 		"/account/all",
 		AccountGetAll,
 	},
+	// Payments
+	// Credit initiation
+	Route{
+		"PaymentCreditInitiation",
+		"POST",
+		"/payment/credit",
+		PaymentCreditInitiation,
+	},
+	// Deposit initiation
+	Route{
+		"PaymentDepositInitiation",
+		"POST",
+		"/payment/deposit",
+		PaymentDepositInitiation,
+	},
 }
 
 func NewRouter() *mux.Router {
