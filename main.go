@@ -17,12 +17,7 @@ const (
 func main() {
 	argClientServer := os.Args[1]
 
-	err := RunHttpServer()
-	if err != nil {
-		log.Fatalf("Could not start HTTP server. " + err.Error())
-	}
-
-	err = parseArguments(argClientServer)
+	err := parseArguments(argClientServer)
 	if err != nil {
 		log.Fatalf("Error starting, err: %v\n", err)
 	}
