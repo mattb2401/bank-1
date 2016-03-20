@@ -40,7 +40,7 @@ func ProcessAppAuth(data []string) (result string, err error) {
 			return "", err
 		}
 		return result, nil
-		// Log in
+	// Log in
 	case "2":
 		if len(data) < 5 {
 			return "", errors.New("appauth.ProcessAppAuth: Not all required fields present")
@@ -56,6 +56,16 @@ func ProcessAppAuth(data []string) (result string, err error) {
 			return "", errors.New("appauth.ProcessAppAuth: Not all required fields present")
 		}
 		result, err = CreateUserPassword(data[3], data[4])
+		if err != nil {
+			return "", err
+		}
+		return result, nil
+	// Remove an account
+	case "4":
+		if len(data) < 5 {
+			return "", errors.New("appauth.ProcessAppAuth: Not all required fields present")
+		}
+		result, err = RemoveUserPassword(data[3], data[4])
 		if err != nil {
 			return "", err
 		}
