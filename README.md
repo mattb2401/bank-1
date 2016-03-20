@@ -52,14 +52,23 @@ Either create your own self-signed certs, or purchase them, and place them in th
 - `client.key`
 - `client.pem`
 
-## Running the server
+## Running the HTTP API
 
-Once built, you can run the server:
+Once built, you can run the HTTP API:
+
+- Secure: `./bank http`
+- Insecure: There is no insecure mode implemented
+
+The API will then be available at the [FQDN and port specified](https://github.com/ksred/bank/blob/master/main.go#L11).
+
+## Running the CLI server
+
+You can run the CLI server:
 
 - Secure: `./bank server`
 - Insecure: `./bank serverNoTLS`
 
-## Running the client
+## Running the CLI client
 
 The program comes with a CLI client. A TLS client can only connect to a TLS server, so the modes must match. The server accepts commands from the CLI separated by new lines. _A detailed explanation will be placed in the wiki._
 
