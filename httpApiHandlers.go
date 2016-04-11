@@ -33,6 +33,7 @@ func getTokenFromHeader(w http.ResponseWriter, r *http.Request) (token string, e
 
 // Extend token
 func AuthIndex(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Extend token")
 	token, err := getTokenFromHeader(w, r)
 	if err != nil {
 		Response("", err, w, r)
@@ -49,6 +50,7 @@ func AuthIndex(w http.ResponseWriter, r *http.Request) {
 
 // Get token
 func AuthLogin(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Get token")
 	user := r.FormValue("User")
 	password := r.FormValue("Password")
 
@@ -84,6 +86,7 @@ func AuthRemove(w http.ResponseWriter, r *http.Request) {
 }
 
 func AccountIndex(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Account Index")
 	token, err := getTokenFromHeader(w, r)
 	if err != nil {
 		Response("", err, w, r)
@@ -132,6 +135,7 @@ func AccountCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func AccountGet(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Account Get")
 	token, err := getTokenFromHeader(w, r)
 	if err != nil {
 		Response("", err, w, r)
@@ -147,6 +151,7 @@ func AccountGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func AccountGetAll(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Account GetAll")
 	token, err := getTokenFromHeader(w, r)
 	if err != nil {
 		Response("", err, w, r)

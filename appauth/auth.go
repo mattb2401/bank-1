@@ -85,6 +85,7 @@ func CreateUserPassword(user string, password string) (result string, err error)
 	if err != nil {
 		return "", errors.New("appauth.CreateUserPassword: Could not connect to database")
 	}
+	defer db.Close()
 
 	// Check for existing account
 	rows, err := db.Query("SELECT `accountNumber` FROM `accounts_auth` WHERE `accountNumber` = ?", user)
@@ -131,6 +132,7 @@ func RemoveUserPassword(user string, hashedPassword string) (result string, err 
 	if err != nil {
 		return "", errors.New("appauth.RemoveUserPassword: Could not connect to database")
 	}
+	defer db.Close()
 
 	// Check for existing account
 	rows, err := db.Query("SELECT `accountNumber` FROM `accounts_auth` WHERE `accountNumber` = ?", user)
@@ -173,6 +175,7 @@ func CreateToken(user string, password string) (token string, err error) {
 	if err != nil {
 		return "", errors.New("appauth.CreateToken: Could not connect to database")
 	}
+	defer db.Close()
 
 	rows, err := db.Query("SELECT `password` FROM `accounts_auth` WHERE `accountNumber` = ?", user)
 	if err != nil {

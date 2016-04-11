@@ -3,6 +3,7 @@ package accounts
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -190,6 +191,7 @@ func openAccount(data []string) (result string, err error) {
 }
 
 func setAccountDetails(data []string) (accountDetails AccountDetails, err error) {
+	fmt.Println(data)
 	if data[4] == "" {
 		return AccountDetails{}, errors.New("accounts.setAccountDetails: Family name cannot be empty")
 	}

@@ -243,12 +243,12 @@ func getAccountMeta(id string) (accountDetails AccountHolderDetails, err error) 
 func getAllAccountDetails() (allAccounts []AccountDetails, err error) {
 	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
 	if err != nil {
-		return []AccountDetails{}, errors.New("accounts.getAllAccountDetails: More than one account found")
+		return []AccountDetails{}, errors.New("accounts.getAllAccountDetails: Error with opening DB: " + err.Error())
 	}
 
 	rows, err := db.Query("SELECT `accountNumber`, `bankNumber`, `accountHolderName` FROM `accounts`")
 	if err != nil {
-		return []AccountDetails{}, errors.New("accounts.getAllAccountDetails: More than one account found")
+		return []AccountDetails{}, errors.New("accounts.getAllAccountDetails: Error with select query: " + err.Error())
 	}
 	defer rows.Close()
 

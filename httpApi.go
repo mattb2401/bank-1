@@ -27,7 +27,8 @@ func RunHttpServer() (err error) {
 
 	router := NewRouter()
 
-	err = http.ListenAndServeTLS(":8443", "certs/server.pem", "certs/server.key", router)
+	//err = http.ListenAndServeTLS(":8443", "certs/server.pem", "certs/server.key", router)
+	err = http.ListenAndServeTLS(":8443", "certs/thebankoftoday.com.crt", "certs/thebankoftoday.com.key", router)
 	fmt.Println(err)
 	return
 }
