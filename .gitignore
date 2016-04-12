@@ -8,3 +8,9 @@ config.json
 *.orig
 
 bank
+
+*.key
+
+*.pem
+
+*.crt
