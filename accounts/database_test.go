@@ -33,6 +33,17 @@ func TestLoadDatabase(t *testing.T) {
 	}
 }
 
+func BenchmarkLoadDatabase(b *testing.B) {
+	// Load app config
+	Config, _ := configuration.LoadConfig()
+	// Set config in packages
+	SetConfig(&Config)
+
+	for n := 0; n < b.N; n++ {
+		_, _ = loadDatabase()
+	}
+}
+
 func TestDoCreateAccount(t *testing.T) {
 	//accountDetails AccountDetails, accountHolderDetails AccountHolderDetails
 	accountDetail := AccountDetails{
@@ -56,6 +67,25 @@ func TestDoCreateAccount(t *testing.T) {
 	err = doDeleteAccount(&accountDetail)
 	if err != nil {
 		t.Errorf("DoDeleteAccount does not pass. Looking for %v, got %v", nil, err)
+	}
+}
+
+func BenchmarkDoCreateAccount(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		accountDetail := AccountDetails{
+			"",
+			"",
+			"User,Test",
+			decimal.NewFromFloat(0.),
+			decimal.NewFromFloat(0.),
+			decimal.NewFromFloat(0.),
+			0,
+		}
+
+		ti := time.Now()
+		sqlTime := int32(ti.Unix())
+		_ = doCreateAccount(sqlTime, &accountDetail)
+		_ = doDeleteAccount(&accountDetail)
 	}
 }
 
@@ -97,6 +127,42 @@ func TestDoAccountMeta(t *testing.T) {
 	err = doDeleteAccountMeta(&accountHolderDetail, &accountDetail)
 	if err != nil {
 		t.Errorf("DoAccountMeta DeleteAccount does not pass. Looking for %v, got %v", nil, err)
+	}
+}
+
+func BenchmarkDoAccountMeta(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		accountDetail := AccountDetails{
+			"",
+			"",
+			"User,Test",
+			decimal.NewFromFloat(0.),
+			decimal.NewFromFloat(0.),
+			decimal.NewFromFloat(0.),
+			0,
+		}
+
+		accountHolderDetail := AccountHolderDetails{
+			"",
+			"",
+			"Test",
+			"User",
+			"1900-01-01",
+			"19000101-1000-100",
+			"555-123-1234",
+			"",
+			"test@user.com",
+			"Address 1",
+			"Address 2",
+			"Address 3",
+			"22202",
+		}
+
+		ti := time.Now()
+		sqlTime := int32(ti.Unix())
+		_ = doCreateAccountMeta(sqlTime, &accountHolderDetail, &accountDetail)
+
+		_ = doDeleteAccountMeta(&accountHolderDetail, &accountDetail)
 	}
 }
 
@@ -176,6 +242,46 @@ func TestGetAccount(t *testing.T) {
 		t.Errorf("GetAccount DeleteAccountMeta does not pass. Looking for %v, got %v", nil, err)
 	}
 
+}
+
+func BenchmarkDoGetAccount(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		accountDetail := AccountDetails{
+			"",
+			"",
+			"User,Test",
+			decimal.NewFromFloat(0.),
+			decimal.NewFromFloat(0.),
+			decimal.NewFromFloat(0.),
+			0,
+		}
+
+		accountHolderDetail := AccountHolderDetails{
+			"",
+			"",
+			"Test",
+			"User",
+			"1900-01-01",
+			"19000101-1000-100",
+			"555-123-1234",
+			"",
+			"test@user.com",
+			"Address 1",
+			"Address 2",
+			"Address 3",
+			"22202",
+		}
+
+		ti := time.Now()
+		sqlTime := int32(ti.Unix())
+
+		_ = doCreateAccount(sqlTime, &accountDetail)
+		_ = doCreateAccountMeta(sqlTime, &accountHolderDetail, &accountDetail)
+		// Get account
+		_, _ = getAccountDetails(accountDetail.AccountNumber)
+		_ = doDeleteAccount(&accountDetail)
+		_ = doDeleteAccountMeta(&accountHolderDetail, &accountDetail)
+	}
 }
 
 func TestGetAccountMeta(t *testing.T) {
@@ -276,6 +382,45 @@ func TestGetAccountMeta(t *testing.T) {
 	}
 
 }
+func BenchmarkDoGetAccountMeta(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		accountDetail := AccountDetails{
+			"",
+			"",
+			"User,Test",
+			decimal.NewFromFloat(0.),
+			decimal.NewFromFloat(0.),
+			decimal.NewFromFloat(0.),
+			0,
+		}
+
+		accountHolderDetail := AccountHolderDetails{
+			"",
+			"",
+			"Test",
+			"User",
+			"1900-01-01",
+			"19000101-1000-100",
+			"555-123-1234",
+			"",
+			"test@user.com",
+			"Address 1",
+			"Address 2",
+			"Address 3",
+			"22202",
+		}
+
+		ti := time.Now()
+		sqlTime := int32(ti.Unix())
+
+		_ = doCreateAccount(sqlTime, &accountDetail)
+		_ = doCreateAccountMeta(sqlTime, &accountHolderDetail, &accountDetail)
+		// Get account
+		_, _ = getAccountMeta(accountHolderDetail.IdentificationNumber)
+		_ = doDeleteAccount(&accountDetail)
+		_ = doDeleteAccountMeta(&accountHolderDetail, &accountDetail)
+	}
+}
 
 func TestGetAllAccountDetails(t *testing.T) {
 	accounts, err := getAllAccountDetails()
@@ -286,6 +431,12 @@ func TestGetAllAccountDetails(t *testing.T) {
 
 	if reflect.TypeOf(accounts).String() != "[]accounts.AccountDetails" {
 		t.Errorf("GetAllAccountDetails does not pass. TYPE. Looking for %v, got %v", "[]accounts.AccountDetails", reflect.TypeOf(accounts).String())
+	}
+}
+
+func BenchmarkDoAllAccountDetails(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		_, _ = getAllAccountDetails()
 	}
 }
 
@@ -366,6 +517,46 @@ func TestGetSingleAccountDetail(t *testing.T) {
 	}
 }
 
+func BenchmarkGetSingleAccountDetail(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		accountDetail := AccountDetails{
+			"",
+			"",
+			"User,Test",
+			decimal.NewFromFloat(0.),
+			decimal.NewFromFloat(0.),
+			decimal.NewFromFloat(0.),
+			0,
+		}
+
+		accountHolderDetail := AccountHolderDetails{
+			"",
+			"",
+			"Test",
+			"User",
+			"1900-01-01",
+			"19000101-1000-100",
+			"555-123-1234",
+			"",
+			"test@user.com",
+			"Address 1",
+			"Address 2",
+			"Address 3",
+			"22202",
+		}
+
+		ti := time.Now()
+		sqlTime := int32(ti.Unix())
+
+		_ = doCreateAccount(sqlTime, &accountDetail)
+		_ = doCreateAccountMeta(sqlTime, &accountHolderDetail, &accountDetail)
+		// Do get account call
+		_, _ = getSingleAccountDetail(accountDetail.AccountNumber)
+		_ = doDeleteAccount(&accountDetail)
+		_ = doDeleteAccountMeta(&accountHolderDetail, &accountDetail)
+	}
+}
+
 func TestGetSingleAccountNumberByID(t *testing.T) {
 	accountDetail := AccountDetails{
 		"",
@@ -425,5 +616,45 @@ func TestGetSingleAccountNumberByID(t *testing.T) {
 	err = doDeleteAccountMeta(&accountHolderDetail, &accountDetail)
 	if err != nil {
 		t.Errorf("GetSingleAccountNumberByID DeleteAccountMeta does not pass. Looking for %v, got %v", nil, err)
+	}
+}
+
+func BenchmarkGetSingleAccountNumberByID(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		accountDetail := AccountDetails{
+			"",
+			"",
+			"User,Test",
+			decimal.NewFromFloat(0.),
+			decimal.NewFromFloat(0.),
+			decimal.NewFromFloat(0.),
+			0,
+		}
+
+		accountHolderDetail := AccountHolderDetails{
+			"",
+			"",
+			"Test",
+			"User",
+			"1900-01-01",
+			"19000101-1000-100",
+			"555-123-1234",
+			"",
+			"test@user.com",
+			"Address 1",
+			"Address 2",
+			"Address 3",
+			"22202",
+		}
+
+		ti := time.Now()
+		sqlTime := int32(ti.Unix())
+
+		_ = doCreateAccount(sqlTime, &accountDetail)
+		_ = doCreateAccountMeta(sqlTime, &accountHolderDetail, &accountDetail)
+		// Do get account call
+		_, _ = getSingleAccountNumberByID(accountHolderDetail.IdentificationNumber)
+		_ = doDeleteAccount(&accountDetail)
+		_ = doDeleteAccountMeta(&accountHolderDetail, &accountDetail)
 	}
 }

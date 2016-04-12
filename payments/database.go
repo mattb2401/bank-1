@@ -40,6 +40,29 @@ func savePainTransaction(transaction PAINTrans) (err error) {
 	return
 }
 
+// This is for testing. Transactions should never be removed
+func removePainTransaction(transaction PAINTrans) (err error) {
+	// Prepare statement for inserting data
+	delStatement := "DELETE FROM transactions WHERE `transaction` = ? AND `type` = ? AND `senderAccountNumber` = ? AND `senderBankNumber` = ? AND `receiverAccountNumber` = ? AND `receiverBankNumber` = ? AND `transactionAmount` = ? AND `feeAmount` = ? "
+	stmtDel, err := Config.Db.Prepare(delStatement)
+	if err != nil {
+		return errors.New("payments.removePainTransaction: " + err.Error())
+	}
+	defer stmtDel.Close() // Close the statement when we leave main() / the program terminates
+
+	// The feePerc is a percentage, convert to amount
+	feeAmount := transaction.Amount.Mul(transaction.Fee)
+
+	_, err = stmtDel.Exec("pain", transaction.PainType, transaction.Sender.AccountNumber, transaction.Sender.BankNumber, transaction.Receiver.AccountNumber, transaction.Receiver.BankNumber,
+		transaction.Amount, feeAmount)
+
+	if err != nil {
+		return errors.New("payments.removePainTransaction: " + err.Error())
+	}
+
+	return
+}
+
 //func updateAccounts(sender AccountHolder, receiver AccountHolder, transactionAmount float64, transactionFee float64) {
 func updateAccounts(transaction PAINTrans) (err error) {
 	t := time.Now()
