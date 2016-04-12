@@ -65,6 +65,24 @@ func TestCreateRemoveUserPassword(t *testing.T) {
 	}
 }
 
+func BenchmarkCreateRemoveUserPassword(b *testing.B) {
+	Config, _ := configuration.LoadConfig()
+	SetConfig(&Config)
+
+	user := "1234-1234-1234-1234"
+	password := "test-password"
+
+	// run the Fib function b.N times
+	for n := 0; n < b.N; n++ {
+		hasher := sha512.New()
+		hasher.Write([]byte(password))
+		hashedPassword := hex.EncodeToString(hasher.Sum(nil))
+
+		_, _ = CreateUserPassword(user, password)
+		_, _ = RemoveUserPassword(user, hashedPassword)
+	}
+}
+
 func TestCreateRemoveCheckToken(t *testing.T) {
 	AccountsSetConfig(t)
 
@@ -100,6 +118,28 @@ func TestCreateRemoveCheckToken(t *testing.T) {
 		t.Errorf("CreateRemoveCheckToken Remove does not pass. Looking for %v, got %v", nil, err)
 	}
 
+}
+
+func BenchmarkCreateRemoveCheckToken(b *testing.B) {
+	Config, _ := configuration.LoadConfig()
+	SetConfig(&Config)
+
+	user := "1234-1234-1234-1234"
+	password := "test-password"
+
+	// run the Fib function b.N times
+	for n := 0; n < b.N; n++ {
+		hasher := sha512.New()
+		hasher.Write([]byte(password))
+		hashedPassword := hex.EncodeToString(hasher.Sum(nil))
+
+		_, _ = CreateUserPassword(user, password)
+
+		token, _ := CreateToken(user, password)
+		_ = CheckToken(token)
+		_, _ = RemoveToken(token)
+		_, _ = RemoveUserPassword(user, hashedPassword)
+	}
 }
 
 func TestGetUserFromToken(t *testing.T) {
@@ -141,4 +181,25 @@ func TestGetUserFromToken(t *testing.T) {
 		t.Errorf("GetUserFromToken Remove does not pass. Looking for %v, got %v", nil, err)
 	}
 
+}
+
+func BenchmarkGetUserFromToken(b *testing.B) {
+	Config, _ := configuration.LoadConfig()
+	SetConfig(&Config)
+
+	user := "1234-1234-1234-1234"
+	password := "test-password"
+
+	// run the Fib function b.N times
+	for n := 0; n < b.N; n++ {
+		hasher := sha512.New()
+		hasher.Write([]byte(password))
+		hashedPassword := hex.EncodeToString(hasher.Sum(nil))
+
+		_, _ = CreateUserPassword(user, password)
+		token, _ := CreateToken(user, password)
+		_, _ = GetUserFromToken(token)
+		_, _ = RemoveToken(token)
+		_, _ = RemoveUserPassword(user, hashedPassword)
+	}
 }
