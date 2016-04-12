@@ -3,6 +3,8 @@ package accounts
 import (
 	"reflect"
 	"testing"
+
+	"github.com/shopspring/decimal"
 )
 
 func TestProcessAccountTooFewFields(t *testing.T) {
@@ -59,16 +61,16 @@ func TestSetAccountDetails(t *testing.T) {
 		t.Errorf("SetAccountDetails does not pass. DETAILS. Looking for %v, got %v", BANK_NUMBER, accountDetails.BankNumber)
 	}
 
-	if accountDetails.Overdraft != OPENING_OVERDRAFT {
-		t.Errorf("SetAccountDetails does not pass. DETAILS. Looking for %v, got %v", OPENING_OVERDRAFT, accountDetails.Overdraft)
+	if !accountDetails.Overdraft.Equals(decimal.NewFromFloat(OPENING_OVERDRAFT)) {
+		t.Errorf("SetAccountDetails does not pass. DETAILS. Looking for %v, got %v", decimal.NewFromFloat(OPENING_OVERDRAFT), accountDetails.Overdraft)
 	}
 
-	if accountDetails.AccountBalance != OPENING_BALANCE {
-		t.Errorf("SetAccountDetails does not pass. DETAILS. Looking for %v, got %v", OPENING_BALANCE, accountDetails.AccountBalance)
+	if !accountDetails.AccountBalance.Equals(decimal.NewFromFloat(OPENING_BALANCE)) {
+		t.Errorf("SetAccountDetails does not pass. DETAILS. Looking for %v, got %v", decimal.NewFromFloat(OPENING_BALANCE), accountDetails.AccountBalance)
 	}
 
-	if accountDetails.AvailableBalance != (OPENING_BALANCE + OPENING_OVERDRAFT) {
-		t.Errorf("SetAccountDetails does not pass. DETAILS. Looking for %v, got %v", (OPENING_BALANCE + OPENING_OVERDRAFT), accountDetails.AvailableBalance)
+	if !accountDetails.AvailableBalance.Equals(decimal.NewFromFloat(OPENING_BALANCE + OPENING_OVERDRAFT)) {
+		t.Errorf("SetAccountDetails does not pass. DETAILS. Looking for %v, got %v", decimal.NewFromFloat(OPENING_BALANCE+OPENING_OVERDRAFT), accountDetails.AvailableBalance)
 	}
 
 	if accountDetails.AccountHolderName != "Doe,John" {
