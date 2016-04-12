@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ksred/bank/configuration"
+	"github.com/shopspring/decimal"
 )
 
 func TestLoadConfiguration(t *testing.T) {
@@ -38,9 +39,9 @@ func TestDoCreateAccount(t *testing.T) {
 		"",
 		"",
 		"User,Test",
-		0.,
-		0.,
-		0.,
+		decimal.NewFromFloat(0.),
+		decimal.NewFromFloat(0.),
+		decimal.NewFromFloat(0.),
 		0,
 	}
 
@@ -63,9 +64,9 @@ func TestDoAccountMeta(t *testing.T) {
 		"",
 		"",
 		"User,Test",
-		0.,
-		0.,
-		0.,
+		decimal.NewFromFloat(0.),
+		decimal.NewFromFloat(0.),
+		decimal.NewFromFloat(0.),
 		0,
 	}
 
@@ -104,9 +105,9 @@ func TestGetAccount(t *testing.T) {
 		"",
 		"",
 		"User,Test",
-		0.,
-		0.,
-		0.,
+		decimal.NewFromFloat(0.),
+		decimal.NewFromFloat(0.),
+		decimal.NewFromFloat(0.),
 		0,
 	}
 
@@ -152,14 +153,14 @@ func TestGetAccount(t *testing.T) {
 	if getAccountDetails.BankNumber != "" {
 		t.Errorf("GetAccount does not pass. DETAILS. BankNumber: Looking for %v, got %v", "", getAccountDetails.BankNumber)
 	}
-	if getAccountDetails.Overdraft != 0. {
-		t.Errorf("GetAccount does not pass. DETAILS. Overdraft: Looking for %v, got %v", 0., getAccountDetails.Overdraft)
+	if !getAccountDetails.Overdraft.Equals(decimal.NewFromFloat(0.)) {
+		t.Errorf("GetAccount does not pass. DETAILS. Overdraft: Looking for %v, got %v", decimal.NewFromFloat(0.), getAccountDetails.Overdraft)
 	}
-	if getAccountDetails.AvailableBalance != 0. {
-		t.Errorf("GetAccount does not pass. DETAILS. AvailableBalance: Looking for %v, got %v", 0., getAccountDetails.AvailableBalance)
+	if !getAccountDetails.AvailableBalance.Equals(decimal.NewFromFloat(0.)) {
+		t.Errorf("GetAccount does not pass. DETAILS. AvailableBalance: Looking for %v, got %v", decimal.NewFromFloat(0.), getAccountDetails.AvailableBalance)
 	}
-	if getAccountDetails.AccountBalance != 0. {
-		t.Errorf("GetAccount does not pass. DETAILS. AccountBalance: Looking for %v, got %v", 0., getAccountDetails.AccountBalance)
+	if !getAccountDetails.AccountBalance.Equals(decimal.NewFromFloat(0.)) {
+		t.Errorf("GetAccount does not pass. DETAILS. AccountBalance: Looking for %v, got %v", decimal.NewFromFloat(0.), getAccountDetails.AccountBalance)
 	}
 	if getAccountDetails.AccountHolderName != "User,Test" {
 		t.Errorf("GetAccount does not pass. DETAILS. AccountHodlerName: Looking for %v, got %v", "User,Test", getAccountDetails.AccountHolderName)
@@ -182,9 +183,9 @@ func TestGetAccountMeta(t *testing.T) {
 		"",
 		"",
 		"User,Test",
-		0.,
-		0.,
-		0.,
+		decimal.NewFromFloat(0.),
+		decimal.NewFromFloat(0.),
+		decimal.NewFromFloat(0.),
 		0,
 	}
 
@@ -293,9 +294,9 @@ func TestGetSingleAccountDetail(t *testing.T) {
 		"",
 		"",
 		"User,Test",
-		0.,
-		0.,
-		0.,
+		decimal.NewFromFloat(0.),
+		decimal.NewFromFloat(0.),
+		decimal.NewFromFloat(0.),
 		0,
 	}
 
@@ -341,14 +342,14 @@ func TestGetSingleAccountDetail(t *testing.T) {
 	if getAccountDetails.BankNumber != "" {
 		t.Errorf("GetSingleAccountDetail does not pass. DETAILS. BankNumber: Looking for %v, got %v", "", getAccountDetails.BankNumber)
 	}
-	if getAccountDetails.Overdraft != 0. {
-		t.Errorf("GetSingleAccountDetail does not pass. DETAILS. Overdraft: Looking for %v, got %v", 0., getAccountDetails.Overdraft)
+	if !getAccountDetails.Overdraft.Equals(decimal.NewFromFloat(0.)) {
+		t.Errorf("GetSingleAccountDetail does not pass. DETAILS. Overdraft: Looking for %v, got %v", decimal.NewFromFloat(0.), getAccountDetails.Overdraft)
 	}
-	if getAccountDetails.AvailableBalance != 0. {
-		t.Errorf("GetSingleAccountDetail does not pass. DETAILS. AvailableBalance: Looking for %v, got %v", 0., getAccountDetails.AvailableBalance)
+	if !getAccountDetails.AvailableBalance.Equals(decimal.NewFromFloat(0.)) {
+		t.Errorf("GetSingleAccountDetail does not pass. DETAILS. AvailableBalance: Looking for %v, got %v", decimal.NewFromFloat(0.), getAccountDetails.AvailableBalance)
 	}
-	if getAccountDetails.AccountBalance != 0. {
-		t.Errorf("GetSingleAccountDetail does not pass. DETAILS. AccountBalance: Looking for %v, got %v", 0., getAccountDetails.AccountBalance)
+	if !getAccountDetails.AccountBalance.Equals(decimal.NewFromFloat(0.)) {
+		t.Errorf("GetSingleAccountDetail does not pass. DETAILS. AccountBalance: Looking for %v, got %v", decimal.NewFromFloat(0.), getAccountDetails.AccountBalance)
 	}
 	if getAccountDetails.AccountHolderName != "User,Test" {
 		t.Errorf("GetSingleAccountDetail does not pass. DETAILS. AccountHodlerName: Looking for %v, got %v", "User,Test", getAccountDetails.AccountHolderName)
@@ -370,9 +371,9 @@ func TestGetSingleAccountNumberByID(t *testing.T) {
 		"",
 		"",
 		"User,Test",
-		0.,
-		0.,
-		0.,
+		decimal.NewFromFloat(0.),
+		decimal.NewFromFloat(0.),
+		decimal.NewFromFloat(0.),
 		0,
 	}
 

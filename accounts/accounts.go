@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/ksred/bank/appauth"
+	"github.com/shopspring/decimal"
 )
 
 /*
@@ -88,9 +89,9 @@ type AccountDetails struct {
 	AccountNumber     string
 	BankNumber        string
 	AccountHolderName string
-	AccountBalance    float64
-	Overdraft         float64
-	AvailableBalance  float64
+	AccountBalance    decimal.Decimal
+	Overdraft         decimal.Decimal
+	AvailableBalance  decimal.Decimal
 	Timestamp         int
 }
 
@@ -200,9 +201,9 @@ func setAccountDetails(data []string) (accountDetails AccountDetails, err error)
 	}
 	accountDetails.BankNumber = BANK_NUMBER
 	accountDetails.AccountHolderName = data[4] + "," + data[3] // Family Name, Given Name
-	accountDetails.AccountBalance = OPENING_BALANCE
-	accountDetails.Overdraft = OPENING_OVERDRAFT
-	accountDetails.AvailableBalance = OPENING_BALANCE + OPENING_OVERDRAFT
+	accountDetails.AccountBalance = decimal.NewFromFloat(OPENING_BALANCE)
+	accountDetails.Overdraft = decimal.NewFromFloat(OPENING_OVERDRAFT)
+	accountDetails.AvailableBalance = decimal.NewFromFloat(OPENING_BALANCE + OPENING_OVERDRAFT)
 
 	return
 }

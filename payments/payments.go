@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/ksred/bank/appauth"
+	"github.com/shopspring/decimal"
 )
 
 const TRANSACTION_FEE = 0.0001 // 0.01%
@@ -40,8 +41,8 @@ type PAINTrans struct {
 	PainType int64
 	Sender   AccountHolder
 	Receiver AccountHolder
-	Amount   float64
-	Fee      float64
+	Amount   decimal.Decimal
+	Fee      decimal.Decimal
 }
 
 func ProcessPAIN(data []string) (result string, err error) {
@@ -97,9 +98,9 @@ func painCreditTransferInitiation(painType int64, data []string) (result string,
 	}
 
 	trAmt := strings.TrimRight(data[5], "\x00")
-	transactionAmount, err := strconv.ParseFloat(trAmt, 64)
+	transactionAmountDecimal, err := decimal.NewFromString(trAmt)
 	if err != nil {
-		return "", errors.New("payments.painCreditTransferInitiation: Could not convert transaction amount to float64. " + err.Error())
+		return "", errors.New("payments.painCreditTransferInitiation: Could not convert transaction amount to decimal. " + err.Error())
 	}
 
 	// Check if sender valid
@@ -111,14 +112,15 @@ func painCreditTransferInitiation(painType int64, data []string) (result string,
 		return "", errors.New("payments.painCreditTransferInitiation: Sender not valid")
 	}
 
-	transaction := PAINTrans{painType, sender, receiver, transactionAmount, TRANSACTION_FEE}
+	transaction := PAINTrans{painType, sender, receiver, transactionAmountDecimal, decimal.NewFromFloat(TRANSACTION_FEE)}
 
 	// Checks for transaction (avail balance, accounts open, etc)
 	balanceAvailable, err := checkBalance(transaction.Sender)
 	if err != nil {
 		return "", errors.New("payments.painCreditTransferInitiation: " + err.Error())
 	}
-	if balanceAvailable < transaction.Amount {
+	// Comparing decimals results in -1 if <
+	if balanceAvailable.Cmp(transaction.Amount) == -1 {
 		return "", errors.New("payments.painCreditTransferInitiation: Insufficient funds available")
 	}
 
@@ -175,9 +177,9 @@ func customerDepositInitiation(painType int64, data []string) (result string, er
 	}
 
 	trAmt := strings.TrimRight(data[4], "\x00")
-	transactionAmount, err := strconv.ParseFloat(trAmt, 64)
+	transactionAmountDecimal, err := decimal.NewFromString(trAmt)
 	if err != nil {
-		return "", errors.New("payments.customerDepositInitiation: Could not convert transaction amount to float64. " + err.Error())
+		return "", errors.New("payments.customerDepositInitiation: Could not convert transaction amount to decimal. " + err.Error())
 	}
 
 	// Check if sender valid
@@ -192,7 +194,7 @@ func customerDepositInitiation(painType int64, data []string) (result string, er
 	// Issue deposit
 	// @TODO This flow show be fixed. Maybe have banks approve deposits before initiation, or
 	// immediate approval below a certain amount subject to rate limiting
-	transaction := PAINTrans{painType, sender, receiver, transactionAmount, TRANSACTION_FEE}
+	transaction := PAINTrans{painType, sender, receiver, transactionAmountDecimal, decimal.NewFromFloat(TRANSACTION_FEE)}
 	// Save transaction
 	result, err = processPAINTransaction(transaction)
 	if err != nil {
