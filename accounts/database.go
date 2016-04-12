@@ -47,13 +47,13 @@ func createAccount(accountDetails *AccountDetails, accountHolderDetails *Account
 	return
 }
 
-func deleteAccount(accountDetails AccountDetails, accountHolderDetails AccountHolderDetails) (err error) {
-	err = doDeleteAccount(&accountDetails)
+func deleteAccount(accountDetails *AccountDetails, accountHolderDetails *AccountHolderDetails) (err error) {
+	err = doDeleteAccount(accountDetails)
 	if err != nil {
 		return errors.New("accounts.deleteAccount: " + err.Error())
 	}
 
-	err = doDeleteAccountMeta(&accountHolderDetails, &accountDetails)
+	err = doDeleteAccountMeta(accountHolderDetails, accountDetails)
 	if err != nil {
 		return errors.New("accounts.deleteAccount: " + err.Error())
 	}

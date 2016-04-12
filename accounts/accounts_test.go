@@ -36,12 +36,18 @@ func TestProcessAccountACMTTypeIncorrect(t *testing.T) {
 
 //@TODO Implement valid ACMT tests
 
-func TestOpenAccount(t *testing.T) {
+func TestOpenCloseAccount(t *testing.T) {
 	tst := []string{"", "", ""}
 	_, err := openAccount(tst)
 
 	if err == nil {
 		t.Errorf("OpenAccount does not pass. Looking for %v, got %v", "Not all fields present", nil)
+	}
+
+	_, err = closeAccount(tst)
+
+	if err == nil {
+		t.Errorf("CloseAccount does not pass. Looking for %v, got %v", "Not all fields present", nil)
 	}
 }
 
@@ -144,5 +150,12 @@ func TestSetAccountHolderDetails(t *testing.T) {
 
 	if accountHolderDetails.PostalCode != "2000" {
 		t.Errorf("SetAccountHolderDetails does not pass. DETAILS. Looking for %v, got %v", "2000", accountHolderDetails.PostalCode)
+	}
+}
+
+func BenchmarkSetAccountHolderDetails(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		tst := []string{"", "", "", "John", "Doe", "01011900", "010119001234123", "111", "222", "user@domain.com", "address 1", "address 2", "address 3", "2000"}
+		_, _ = setAccountHolderDetails(tst)
 	}
 }

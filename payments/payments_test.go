@@ -27,3 +27,20 @@ func TestProcessPAIN(t *testing.T) {
 		t.Errorf("ProcessPAIN PainType1000 does not pass. Looking for %v, got %v", "Not all data is present. Run pain~help to check for needed PAIN data", nil)
 	}
 }
+
+func BenchmarkProcessPAIN(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		// None of these pass/do inserts into transaction table
+		data := []string{"", ""}
+		_, _ = ProcessPAIN(data)
+
+		data = []string{"", "", "not integer"}
+		_, _ = ProcessPAIN(data)
+
+		data = []string{"", "", "1"}
+		_, _ = ProcessPAIN(data)
+
+		data = []string{"", "", "1000"}
+		_, _ = ProcessPAIN(data)
+	}
+}

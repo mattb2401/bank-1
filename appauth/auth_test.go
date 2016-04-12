@@ -72,7 +72,6 @@ func BenchmarkCreateRemoveUserPassword(b *testing.B) {
 	user := "1234-1234-1234-1234"
 	password := "test-password"
 
-	// run the Fib function b.N times
 	for n := 0; n < b.N; n++ {
 		hasher := sha512.New()
 		hasher.Write([]byte(password))
@@ -127,7 +126,6 @@ func BenchmarkCreateRemoveCheckToken(b *testing.B) {
 	user := "1234-1234-1234-1234"
 	password := "test-password"
 
-	// run the Fib function b.N times
 	for n := 0; n < b.N; n++ {
 		hasher := sha512.New()
 		hasher.Write([]byte(password))
@@ -190,7 +188,6 @@ func BenchmarkGetUserFromToken(b *testing.B) {
 	user := "1234-1234-1234-1234"
 	password := "test-password"
 
-	// run the Fib function b.N times
 	for n := 0; n < b.N; n++ {
 		hasher := sha512.New()
 		hasher.Write([]byte(password))

@@ -191,6 +191,39 @@ func openAccount(data []string) (result string, err error) {
 	return
 }
 
+func closeAccount(data []string) (result string, err error) {
+	// Validate string against required info/length
+	if len(data) < 14 {
+		err = errors.New("accounts.closeAccount: Not all fields present")
+		return
+	}
+
+	// Check if account already exists, check on ID number
+	accountHolder, _ := getAccountMeta(data[6])
+	if accountHolder.AccountNumber == "" {
+		return "", errors.New("accounts.closeAccount: Account does not exist. " + accountHolder.AccountNumber)
+	}
+
+	// @FIXME: Remove new line from data
+	data[len(data)-1] = strings.Replace(data[len(data)-1], "\n", "", -1)
+
+	// Delete account
+	accountHolderObject, err := setAccountDetails(data)
+	if err != nil {
+		return "", errors.New("accounts.closeAccount: " + err.Error())
+	}
+	accountHolderDetailsObject, err := setAccountHolderDetails(data)
+	if err != nil {
+		return "", errors.New("accounts.closeAccount: " + err.Error())
+	}
+	err = deleteAccount(&accountHolderObject, &accountHolderDetailsObject)
+	if err != nil {
+		return "", errors.New("accounts.closeAccount: " + err.Error())
+	}
+
+	return
+}
+
 func setAccountDetails(data []string) (accountDetails AccountDetails, err error) {
 	fmt.Println(data)
 	if data[4] == "" {
