@@ -1,11 +1,9 @@
 package payments
 
 import (
-	"database/sql"
 	"errors"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/ksred/bank/configuration"
 )
 
@@ -16,14 +14,10 @@ func SetConfig(config *configuration.Configuration) {
 }
 
 func savePainTransaction(transaction PAINTrans) (err error) {
-	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
-	if err != nil {
-		return errors.New("payments.savePainTransaction: " + err.Error())
-	}
 	// Prepare statement for inserting data
 	insertStatement := "INSERT INTO transactions (`transaction`, `type`, `senderAccountNumber`, `senderBankNumber`, `receiverAccountNumber`, `receiverBankNumber`, `transactionAmount`, `feeAmount`, `timestamp`) "
 	insertStatement += "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
-	stmtIns, err := db.Prepare(insertStatement)
+	stmtIns, err := Config.Db.Prepare(insertStatement)
 	if err != nil {
 		return errors.New("payments.savePainTransaction: " + err.Error())
 	}
@@ -41,7 +35,6 @@ func savePainTransaction(transaction PAINTrans) (err error) {
 	if err != nil {
 		return errors.New("payments.savePainTransaction: " + err.Error())
 	}
-	defer db.Close()
 
 	return
 }
@@ -81,15 +74,10 @@ func updateAccounts(transaction PAINTrans) (err error) {
 }
 
 func updateBankHoldingAccount(feeAmount float64, sqlTime int32) (err error) {
-	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
-	if err != nil {
-		return errors.New("payments.updateBankHoldingAccount: " + err.Error())
-	}
-
 	// Add fees to bank holding account
 	// Only one row in this account for now - only holds single holding bank's balance
 	updateBank := "UPDATE `bank_account` SET `balance` = (`balance` + ?), `timestamp` = ?"
-	stmtUpdBank, err := db.Prepare(updateBank)
+	stmtUpdBank, err := Config.Db.Prepare(updateBank)
 	if err != nil {
 		return errors.New("payments.updateBankHoldingAccount: " + err.Error())
 	}
@@ -100,18 +88,12 @@ func updateBankHoldingAccount(feeAmount float64, sqlTime int32) (err error) {
 	if err != nil {
 		return errors.New("payments.updateBankHoldingAccount: " + err.Error())
 	}
-	defer db.Close()
 	return
 }
 
 // @TODO Look at using accounts.getAccountDetails here
 func checkBalance(account AccountHolder) (balance float64, err error) {
-	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
-	if err != nil {
-		return 0., errors.New("payments.checkBalance: " + err.Error())
-	}
-
-	rows, err := db.Query("SELECT `availableBalance` FROM `accounts` WHERE `accountNumber` = ?", account.AccountNumber)
+	rows, err := Config.Db.Query("SELECT `availableBalance` FROM `accounts` WHERE `accountNumber` = ?", account.AccountNumber)
 	if err != nil {
 		return 0., errors.New("payments.checkBalance: " + err.Error())
 	}
@@ -133,15 +115,10 @@ func checkBalance(account AccountHolder) (balance float64, err error) {
 }
 
 func processCreditInitiation(transaction PAINTrans, sqlTime int32, feeAmount float64) (err error) {
-	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
-	if err != nil {
-		return errors.New("payments.processCreditInitiation: " + err.Error())
-	}
-
 	// Only update if account local
 	if transaction.Sender.BankNumber == "" {
 		updateSenderStatement := "UPDATE accounts SET `accountBalance` = (`accountBalance` - ?), `availableBalance` = (`availableBalance` - ?), `timestamp` = ? WHERE `accountNumber` = ? "
-		stmtUpdSender, err := db.Prepare(updateSenderStatement)
+		stmtUpdSender, err := Config.Db.Prepare(updateSenderStatement)
 		if err != nil {
 			return errors.New("payments.processCreditInitiation: " + err.Error())
 		}
@@ -161,7 +138,7 @@ func processCreditInitiation(transaction PAINTrans, sqlTime int32, feeAmount flo
 	// Only update if account local
 	if transaction.Receiver.BankNumber == "" {
 		updateStatementReceiver := "UPDATE accounts SET `accountBalance` = (`accountBalance` + ?), `availableBalance` = (`availableBalance` + ?), `timestamp` = ? WHERE `accountNumber` = ? "
-		stmtUpdReceiver, err := db.Prepare(updateStatementReceiver)
+		stmtUpdReceiver, err := Config.Db.Prepare(updateStatementReceiver)
 		if err != nil {
 			return errors.New("payments.processCreditInitiation: " + err.Error())
 		}
@@ -179,11 +156,6 @@ func processCreditInitiation(transaction PAINTrans, sqlTime int32, feeAmount flo
 }
 
 func processDepositInitiation(transaction PAINTrans, sqlTime int32, feeAmount float64) (err error) {
-	db, err := sql.Open("mysql", Config.MySQLUser+":"+Config.MySQLPass+"@tcp("+Config.MySQLHost+":"+Config.MySQLPort+")/"+Config.MySQLDB)
-	if err != nil {
-		return errors.New("payments.processDepositInitiation: " + err.Error())
-	}
-
 	// We don't update sender as it is deposit
 	// Update receiver account
 	// The total received amount is the deposited amount minus the fee
@@ -191,7 +163,7 @@ func processDepositInitiation(transaction PAINTrans, sqlTime int32, feeAmount fl
 	// Only update if account local
 	if transaction.Receiver.BankNumber == "" {
 		updateStatementReceiver := "UPDATE accounts SET `accountBalance` = (`accountBalance` + ?), `availableBalance` = (`availableBalance` + ?), `timestamp` = ? WHERE `accountNumber` = ? "
-		stmtUpdReceiver, err := db.Prepare(updateStatementReceiver)
+		stmtUpdReceiver, err := Config.Db.Prepare(updateStatementReceiver)
 		if err != nil {
 			return errors.New("payments.processDepositInitiation: " + err.Error())
 		}
