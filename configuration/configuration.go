@@ -24,7 +24,7 @@ type Configuration struct {
 	Redis        *redis.Client
 }
 
-var configPath = "/Users/ksred/golang/projects/src/github.com/ksred/bank/config.json"
+var configPath = "./config.json"
 
 func LoadConfig() (configuration Configuration, err error) {
 	// Get config

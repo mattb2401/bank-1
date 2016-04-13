@@ -1,16 +1,8 @@
-
 rethinkdb_data/log_file
-
 rethinkdb_data/metadata
-
-config.json
-
+configuration/config.json
 *.orig
-
 bank
-
 *.key
-
 *.pem
-
 *.crt
