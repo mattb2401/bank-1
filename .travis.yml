@@ -17,4 +17,7 @@ services:
 before_install:
   - bash ./travis/build.sh
 
-script: go test -v $HOME/gopath/src/github.com/ksred/bank/accounts/* && go test -v $HOME/gopath/src/github.com/ksred/bank/appauth/* && go test -v $HOME/gopath/src/github.com/ksred/bank/payments/*
+script: 
+  - go test -v -bench=. $HOME/gopath/src/github.com/ksred/bank/accounts/* 
+  - go test -v -bench=. $HOME/gopath/src/github.com/ksred/bank/appauth/* 
+  - go test -v -bench=. $HOME/gopath/src/github.com/ksred/bank/payments/*

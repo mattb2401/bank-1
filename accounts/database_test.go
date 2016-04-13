@@ -1,6 +1,7 @@
 package accounts
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -205,6 +206,9 @@ func TestGetAccount(t *testing.T) {
 	if err != nil {
 		t.Errorf("GetAccount CreateAccountMeta does not pass. Looking for %v, got %v", nil, err)
 	}
+
+	fmt.Printf("Account: %v\n", accountDetail)
+	fmt.Printf("AccountMeta: %v\n", accountHolderDetail)
 
 	// Get account
 	getAccountDetails, err := getAccountDetails(accountDetail.AccountNumber)
