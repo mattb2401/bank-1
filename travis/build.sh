@@ -1,4 +1,4 @@
 #! /bin/bash
 
 # Copy config
-cp config.json ../configuration/
+cp $HOME/gopath/src/github.com/ksred/bank/travis/config.json $HOME/gopath/src/github.com/ksred/bank/configuration/
