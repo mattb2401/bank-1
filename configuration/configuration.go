@@ -49,7 +49,7 @@ func LoadConfig() (configuration Configuration, err error) {
 func loadMySQL(configuration *Configuration) (err error) {
 	configuration.Db, err = sql.Open("mysql", configuration.MySQLUser+":"+configuration.MySQLPass+"@tcp("+configuration.MySQLHost+":"+configuration.MySQLPort+")/"+configuration.MySQLDB)
 	if err != nil {
-		return errors.New("appauth.CreateToken: Could not connect to database")
+		return errors.New("configuration.loadMySQL: Could not connect to database")
 	}
 
 	return
