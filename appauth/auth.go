@@ -6,10 +6,9 @@ import (
 	"errors"
 	"time"
 
-	"gopkg.in/redis.v3"
-
-	"github.com/ksred/bank/configuration"
-	"github.com/satori/go.uuid"
+	"github.com/go-redis/redis"
+	"github.com/mattb2401/bank/configuration"
+	uuid "github.com/satori/go.uuid"
 )
 
 const (
@@ -181,7 +180,10 @@ func CreateToken(user string, password string) (token string, err error) {
 		return "", errors.New("appauth.CreateToken: Authentication credentials invalid")
 	}
 
-	newUuid := uuid.NewV4()
+	newUuid, err := uuid.NewV4()
+	if err != nil {
+		return "", err
+	}
 	token = newUuid.String()
 
 	// @TODO Remove all tokens for this user

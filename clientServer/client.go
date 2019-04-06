@@ -1,4 +1,4 @@
-package main
+package clientServer
 
 import (
 	"bufio"
@@ -7,10 +7,32 @@ import (
 	"log"
 	"net"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
-func runClient(mode string) {
+var (
+	// This is the FQDN from the certs generated
+	CONN_HOST string
+	CONN_PORT string
+	CONN_TYPE string
+	HTTP_PORT string
+)
 
+func initClient() {
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error has occurred: " + err.Error())
+		os.Exit(0)
+	}
+	CONN_HOST = os.Getenv("CONN_HOST")
+	CONN_PORT = os.Getenv("CONN_PORT")
+	CONN_TYPE = os.Getenv("CONN_TYPE")
+	HTTP_PORT = os.Getenv("HTTP_PORT")
+}
+
+func RunClient(mode string) {
+	initClient()
 	fmt.Println("Go Banking Client\nWelcome")
 	// We create a loop which waits for inut on std io
 	fmt.Println("Running on " + CONN_HOST + ":" + CONN_PORT)

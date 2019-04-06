@@ -1,4 +1,4 @@
-package main
+package clientServer
 
 import (
 	"bytes"
@@ -9,16 +9,15 @@ import (
 	"net"
 	"strings"
 
-	"github.com/ksred/bank/accounts"
-	"github.com/ksred/bank/appauth"
-	"github.com/ksred/bank/configuration"
-	"github.com/ksred/bank/payments"
+	"github.com/mattb2401/bank/accounts"
+	"github.com/mattb2401/bank/appauth"
+	"github.com/mattb2401/bank/configuration"
+	"github.com/mattb2401/bank/payments"
 )
 
 var Config configuration.Configuration
 
-func runServer(mode string) (message string, err error) {
-
+func RunServer(mode string) (message string, err error) {
 	// Load app config
 	Config, err := configuration.LoadConfig()
 	if err != nil {

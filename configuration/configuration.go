@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"os"
+	"io/ioutil"
 
 	_ "github.com/go-sql-driver/mysql"
-	"gopkg.in/redis.v3"
+	redis "gopkg.in/redis.v3"
 )
 
 type Configuration struct {
@@ -28,13 +28,14 @@ var configPath = "./config.json"
 
 func LoadConfig() (configuration Configuration, err error) {
 	// Get config
-	file, _ := os.Open(configPath)
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&configuration)
+	file, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		return Configuration{}, errors.New("configuration.LoadConfig: Could not load config. " + err.Error())
+		return Configuration{}, errors.New("configutation.LoadConfig: Could not load config. " + err.Error())
 	}
-
+	err = json.Unmarshal([]byte(file), &configuration)
+	if err != nil {
+		return Configuration{}, errors.New("configutation.LoadConfig: Could not load config. " + err.Error())
+	}
 	// Load MySQL
 	err = loadMySQL(&configuration)
 	if err != nil {
@@ -42,7 +43,6 @@ func LoadConfig() (configuration Configuration, err error) {
 	}
 	// Load Redis
 	loadRedis(&configuration)
-
 	return
 }
 

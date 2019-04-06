@@ -9,8 +9,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ksred/bank/configuration"
-	"github.com/satori/go.uuid"
+	"github.com/mattb2401/bank/configuration"
+	uuid "github.com/satori/go.uuid"
 )
 
 var Config configuration.Configuration
@@ -74,7 +74,10 @@ func doCreateAccount(sqlTime int32, accountDetails *AccountDetails) (err error) 
 	defer stmtIns.Close() // Close the statement when we leave main() / the program terminates
 
 	// Generate account number
-	newUuid := uuid.NewV4()
+	newUuid, err := uuid.NewV4()
+	if err != nil {
+		return err
+	}
 	accountDetails.AccountNumber = newUuid.String()
 
 	_, err = stmtIns.Exec(accountDetails.AccountNumber, accountDetails.BankNumber, accountDetails.AccountHolderName, accountDetails.AccountBalance, accountDetails.Overdraft, accountDetails.AvailableBalance, sqlTime)

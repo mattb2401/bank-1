@@ -1,4 +1,4 @@
-package main
+package httpHandlers
 
 import (
 	"errors"
@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/ksred/bank/accounts"
-	"github.com/ksred/bank/appauth"
-	"github.com/ksred/bank/payments"
+	"github.com/mattb2401/bank/accounts"
+	"github.com/mattb2401/bank/appauth"
+	"github.com/mattb2401/bank/payments"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {

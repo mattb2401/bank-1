@@ -1,4 +1,4 @@
-package main
+package httpHandlers
 
 import (
 	"encoding/json"
@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ksred/bank/accounts"
-	"github.com/ksred/bank/appauth"
-	"github.com/ksred/bank/configuration"
-	"github.com/ksred/bank/payments"
+	"github.com/mattb2401/bank/accounts"
+	"github.com/mattb2401/bank/appauth"
+	"github.com/mattb2401/bank/configuration"
+	"github.com/mattb2401/bank/payments"
 )
 
 func RunHttpServer() (err error) {
@@ -27,8 +27,8 @@ func RunHttpServer() (err error) {
 
 	router := NewRouter()
 
-	//err = http.ListenAndServeTLS(":8443", "certs/server.pem", "certs/server.key", router)
-	err = http.ListenAndServeTLS(":8443", "certs/thebankoftoday.com.crt", "certs/thebankoftoday.com.key", router)
+	err = http.ListenAndServeTLS(":8443", "certs/server.pem", "certs/server.key", router)
+	//	err = http.ListenAndServeTLS(":8443", "certs/thebankoftoday.com.crt", "certs/thebankoftoday.com.key", router)
 	fmt.Println(err)
 	return
 }

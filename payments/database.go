@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ksred/bank/configuration"
+	"github.com/mattb2401/bank/configuration"
 	"github.com/shopspring/decimal"
 )
 

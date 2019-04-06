@@ -1,4 +1,4 @@
-package main
+package clientServer
 
 /*
 func TestSendToServerTLS(t *testing.T) {
